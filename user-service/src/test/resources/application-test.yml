@@ -1,0 +1,13 @@
+#Spring Boot Configuration
+spring:
+  #Datasource's configuration for testcontainers
+  datasource:
+    url: jdbc:tc:postgresql:15.2:///test_db
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  #JPA configuration
+  jpa:
+    hibernate:
+      ddl-auto: none
+      show-sql: true
+      database: postgresql
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
