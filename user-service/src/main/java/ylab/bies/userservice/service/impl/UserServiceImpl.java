@@ -36,12 +36,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse register(RegisterRequest request) {
         UserRepresentation keycloakUser = mapper.toUserRepresentation(request);
-        try (Response keycloakResponse = keycloakService.save(keycloakUser)) {
+        try (Response keycloakResponse = keycloakService.register(keycloakUser)) {
             handleRegistrationResponse(keycloakResponse);
             UUID userId = getUserIdFromResponse(keycloakResponse);
             keycloakService.assignRoles(String.valueOf(userId), userDefaultRoles);
             User user = mapper.toUser(request);
-            return mapper.toUserRepose(save(user, userId));
+            return mapper.toUserRepose(create(user, userId));
         }
     }
 
@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
         return UUID.fromString(CreatedResponseUtil.getCreatedId(response));
     }
 
-    private User save(User user, UUID userId) {
+    private User create(User user, UUID userId) {
         user.setId(userId);
         assignDefaultRoles(user);
         return repository.save(user);

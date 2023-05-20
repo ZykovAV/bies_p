@@ -56,7 +56,7 @@ public class UserAuthControllerTest {
         UUID userId = UUID.randomUUID();
         RegisterRequest request = getValidRegisterRequest();
 
-        when(keycloakService.save(any(UserRepresentation.class))).thenReturn(
+        when(keycloakService.register(any(UserRepresentation.class))).thenReturn(
                 Response.created(URI.create("/" + userId)).build()
         );
         doNothing().when(keycloakService).assignRoles(eq(String.valueOf(userId)), anySet());
@@ -73,7 +73,7 @@ public class UserAuthControllerTest {
         assertThat(isUserResponseValid(request, response, userId)).isTrue();
         assertThat(repository.findById(userId).isPresent()).isTrue();
 
-        verify(keycloakService, times(1)).save(any(UserRepresentation.class));
+        verify(keycloakService, times(1)).register(any(UserRepresentation.class));
     }
 
     @Test
@@ -85,7 +85,7 @@ public class UserAuthControllerTest {
 
         assertThat(repository.findAll()).isEmpty();
 
-        verify(keycloakService, never()).save(any(UserRepresentation.class));
+        verify(keycloakService, never()).register(any(UserRepresentation.class));
         verify(keycloakService, never()).assignRoles(anyString(), anySet());
     }
 
@@ -105,7 +105,7 @@ public class UserAuthControllerTest {
     void register_ThrowException_UserAlreadyExist() throws Exception {
         RegisterRequest request = getValidRegisterRequest();
 
-        when(keycloakService.save(any(UserRepresentation.class))).thenReturn(
+        when(keycloakService.register(any(UserRepresentation.class))).thenReturn(
                 Response.status(Response.Status.CONFLICT).build()
         );
 

@@ -7,7 +7,7 @@ import javax.ws.rs.core.Response;
 import java.util.Set;
 
 public interface KeycloakService {
-    Response save(UserRepresentation user);
+    Response register(UserRepresentation user);
 
     void assignRoles(String userId, Set<String> roles);
 

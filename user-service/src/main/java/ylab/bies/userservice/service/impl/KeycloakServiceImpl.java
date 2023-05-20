@@ -28,7 +28,7 @@ public class KeycloakServiceImpl implements KeycloakService {
     private final RealmResource realmResource;
 
     @Override
-    public Response save(UserRepresentation user) {
+    public Response register(UserRepresentation user) {
         return realmResource.users().create(user);
     }
 
