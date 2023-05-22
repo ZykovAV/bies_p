@@ -1,0 +1,1 @@
+CREATE SCHEMA idea_db;
