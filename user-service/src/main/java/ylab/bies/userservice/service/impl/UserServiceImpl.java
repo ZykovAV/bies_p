@@ -5,8 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ylab.bies.userservice.config.ApplicationConfiguration;
 import ylab.bies.userservice.dto.*;
 import ylab.bies.userservice.entity.Role;
 import ylab.bies.userservice.entity.User;
@@ -19,27 +20,26 @@ import ylab.bies.userservice.service.KeycloakService;
 import ylab.bies.userservice.service.UserService;
 
 import javax.ws.rs.core.Response;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UserServiceImpl implements UserService {
-    @Value("#{'${application.user-default-roles}'.split(',')}")
-    private Set<String> userDefaultRoles;
+    private final ApplicationConfiguration configuration;
     private final UserRepository repository;
     private final RoleRepository roleRepository;
     private final KeycloakService keycloakService;
     private final UserMapper mapper;
 
     @Override
+    @Transactional
     public UserResponse register(RegisterRequest request) {
         UserRepresentation keycloakUser = mapper.toUserRepresentation(request);
         try (Response keycloakResponse = keycloakService.register(keycloakUser)) {
             handleRegistrationResponse(keycloakResponse);
             UUID userId = getUserIdFromResponse(keycloakResponse);
-            keycloakService.assignRoles(String.valueOf(userId), userDefaultRoles);
+            keycloakService.assignRoles(String.valueOf(userId), configuration.getUserDefaultRoles());
             User user = mapper.toUser(request);
             return mapper.toUserRepose(create(user, userId));
         }
@@ -85,7 +85,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private void assignDefaultRoles(User user) {
-        for (String userRole : userDefaultRoles) {
+        for (String userRole : configuration.getUserDefaultRoles()) {
             Role role = roleRepository.findByName(userRole);
             user.getRoles().add(role);
         }

@@ -1,6 +1,7 @@
 # Application configuration
 application:
-  user-default-roles: USER
+  user-default-roles:
+    - USER
 # Spring Boot configuration
 spring:
   liquibase:

@@ -5,8 +5,8 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import ylab.bies.userservice.config.KeycloakConfiguration;
 import ylab.bies.userservice.service.KeycloakService;
 
 import javax.ws.rs.core.Response;
@@ -17,14 +17,7 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class KeycloakServiceImpl implements KeycloakService {
-    @Value("${keycloak.realm}")
-    private String realm;
-    @Value("${keycloak.client-id}")
-    private String clientId;
-    @Value("${keycloak.client-secret}")
-    private String clientSecret;
-    @Value("${keycloak.server-url}")
-    private String serverUrl;
+    private final KeycloakConfiguration configuration;
     private final RealmResource realmResource;
 
     @Override

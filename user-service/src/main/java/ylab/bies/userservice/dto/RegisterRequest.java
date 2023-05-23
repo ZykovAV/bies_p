@@ -7,32 +7,35 @@ import lombok.ToString;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Getter
 @Setter
 @ToString
 public class RegisterRequest {
-    @NotBlank
-    @Size(max = 32)
+    @NotBlank(message = "Username can't be null or empty")
+    @Size(max = 32, message = "Username can't be more than {max} characters")
     private String username;
-    @NotBlank
-    @Size(max = 32)
+
+    @NotBlank(message = "Password can't be null or empty")
+    @Size(max = 32, message = "Password can't be more than {max} characters")
     @ToString.Exclude
     private String password;
-    @NotBlank
-    @Size(max = 32)
-    @Email
+
+    @NotBlank(message = "Email can't be null or empty")
+    @Size(max = 32, message = "Email can't be more than {max} characters")
+    @Email(message = "Email must have valid format")
     private String email;
-    @NotBlank
-    @Size(max = 32)
+
+    @NotBlank(message = "First name can't be null or empty")
+    @Size(max = 32, message = "First name can't be more than {max} characters")
     private String firstName;
-    @NotNull
-    @NotBlank
-    @Size(max = 32)
+
+    @NotBlank(message = "Last name can't be null or empty")
+    @Size(max = 32, message = "Last name can't be more than {max} characters")
     private String lastName;
+
     @Nullable
-    @Size(max = 32)
+    @Size(max = 32, message = "Middle name can't be more than {max} characters")
     private String middleName;
 }

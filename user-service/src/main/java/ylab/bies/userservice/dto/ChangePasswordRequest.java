@@ -9,6 +9,6 @@ import javax.validation.constraints.Size;
 @Setter
 public class ChangePasswordRequest {
     private String oldPassword;
-    @Size(max = 32)
+    @Size(max = 32, message = "Password can't be more than {max} characters")
     private String newPassword;
 }

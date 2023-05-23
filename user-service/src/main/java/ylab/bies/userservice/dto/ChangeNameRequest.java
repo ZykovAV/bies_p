@@ -12,13 +12,16 @@ import javax.validation.constraints.Size;
 @Setter
 @ToString
 public class ChangeNameRequest {
-    @NotBlank
-    @Size(max = 32)
+    @NotBlank(message = "First name can't be null or empty")
+    @Size(max = 32, message = "First name can't be more than {max} characters")
     private String firstName;
-    @NotBlank
+
+    @NotBlank(message = "Last name can't be null or empty")
+    @Size(max = 32, message = "Last name can't be more than {max} characters")
     @Size(max = 32)
     private String lastName;
+
     @Nullable
-    @Size(max = 32)
+    @Size(max = 32, message = "Middle name can't be more than {max} characters")
     private String middleName;
 }

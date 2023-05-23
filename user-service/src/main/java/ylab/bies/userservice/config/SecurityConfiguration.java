@@ -17,6 +17,7 @@ public class SecurityConfiguration {
                         .antMatchers(
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/swagger-ui/**"
                         ).permitAll()
+                        //TODO add valid request security
                         .anyRequest().permitAll())
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
