@@ -46,8 +46,14 @@ public class IdeaControllerTest {
     @DisplayName("Create a draft. Should be successful.")
     public void testCreateDraftIdea_successAndReturns201() throws Exception {
 
-        IdeaDraftRequestDto request = new IdeaDraftRequestDto("Draft Idea", "Draft idea text");
-        IdeaDraftResponseDto response = new IdeaDraftResponseDto(123L, "Draft Idea", "Draft idea text");
+        IdeaDraftRequestDto request = new IdeaDraftRequestDto();
+        request.setName("Draft Idea");
+        request.setText("Draft idea text");
+
+        IdeaDraftResponseDto response = new IdeaDraftResponseDto();
+        response.setId(123L);
+        response.setName("Draft Idea");
+        response.setText("Draft idea text");
 
         Mockito.when(ideaService.createDraftIdea(Mockito.anyString(), Mockito.any(IdeaDraftRequestDto.class)))
                 .thenReturn(response);
@@ -69,7 +75,9 @@ public class IdeaControllerTest {
     @DisplayName("Create a draft. Returns a bad request.")
     public void testCreateDraftIdea_badRequestAndReturns400() throws Exception {
 
-        IdeaDraftRequestDto request = new IdeaDraftRequestDto(null, null);
+        IdeaDraftRequestDto request = new IdeaDraftRequestDto();
+        request.setName(null);
+        request.setText(null);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/ideas/draft")
                         .header("Authorization", "test-token")

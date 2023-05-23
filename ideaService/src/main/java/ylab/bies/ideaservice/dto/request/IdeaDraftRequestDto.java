@@ -1,14 +1,12 @@
 package ylab.bies.ideaservice.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.validation.constraints.NotNull;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Setter
+@Getter
+@RequiredArgsConstructor
 public class IdeaDraftRequestDto {
 
     @NotNull
@@ -16,4 +14,5 @@ public class IdeaDraftRequestDto {
 
     @NotNull
     private String text;
+
 }

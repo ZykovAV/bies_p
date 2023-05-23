@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-votes-table
+      author: admin
+      changes:
+        - createTable:
+            tableName: votes
+            columns:
+              - column:
+                  name: idea_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_like
+                  type: boolean

@@ -1,13 +1,11 @@
 package ylab.bies.ideaservice.dto.response;
 
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Setter
+@Getter
+@RequiredArgsConstructor
 public class IdeaResponseDto {
 
     private Long id;
@@ -17,6 +15,5 @@ public class IdeaResponseDto {
     private Long statusId;
     private Integer rating;
     private Boolean userLike;
-    private Boolean userDislike;
 
 }

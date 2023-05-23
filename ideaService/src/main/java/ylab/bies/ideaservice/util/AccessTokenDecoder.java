@@ -7,12 +7,12 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
-public class Decoder {
+public class AccessTokenDecoder {
 
     private final JwtDecoder jwtDecoder;
 
     @Autowired
-    public Decoder(JwtDecoder jwtDecoder) {
+    public AccessTokenDecoder(JwtDecoder jwtDecoder) {
         this.jwtDecoder = jwtDecoder;
     }
 

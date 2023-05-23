@@ -1,13 +1,11 @@
 package ylab.bies.ideaservice.dto.response;
 
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Setter
+@Getter
+@RequiredArgsConstructor
 public class IdeaDraftResponseDto {
 
     private Long id;

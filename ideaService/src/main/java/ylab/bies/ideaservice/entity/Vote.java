@@ -11,7 +11,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "votes", schema = "idea_db")
+@Table(name = "votes")
 public class Vote {
 
     @EmbeddedId
