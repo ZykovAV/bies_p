@@ -18,15 +18,17 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ylab.bies.fileStorageService.entity.FileModel;
-import ylab.bies.fileStorageService.repository.FileRepository;
+import ylab.bies.fileStorageService.service.FileService;
 import ylab.bies.fileStorageService.service.impl.IdeaServiceClientImpl;
 
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -39,7 +41,7 @@ class FileStorageServiceApplicationTests {
   @Autowired
   private MockMvc mockMvc;
   @Autowired
-  private FileRepository fileRepository;
+  private FileService fileService;
 
   @MockBean
   private MinioClient minioClient;
@@ -82,7 +84,7 @@ class FileStorageServiceApplicationTests {
     assertEquals(mockMultipartFile.getContentType(), argumentsSentToS3.contentType());
 
     //check object saved to database
-    FileModel fileModelSavedToDB = fileRepository.findById(fileUUIDSentToS3).orElse(null);
+    FileModel fileModelSavedToDB = fileService.getByFileId(fileUUIDSentToS3).orElse(null);
     assertNotNull(fileModelSavedToDB);
     assertEquals(ideaId, fileModelSavedToDB.getIdeaId());
     assertEquals(mockMultipartFile.getContentType(), fileModelSavedToDB.getContentType());
@@ -101,7 +103,7 @@ class FileStorageServiceApplicationTests {
             .andDo(print())
             .andExpect(status().isForbidden());
 
-    assertTrue(fileRepository.findAllByIdeaId(ideaId).isEmpty());
+    assertTrue(fileService.getFileListByIdeaId(ideaId).getFiles().isEmpty());
     verify(minioClient, never()).putObject(any(PutObjectArgs.class));
   }
 
@@ -118,8 +120,34 @@ class FileStorageServiceApplicationTests {
             .andExpect(status().isInternalServerError());
 
     //make sure db transaction is reverted
-    assertTrue(fileRepository.findAllByIdeaId(ideaId).isEmpty());
+    assertTrue(fileService.getFileListByIdeaId(ideaId).getFiles().isEmpty());
     verify(minioClient, only()).putObject(any(PutObjectArgs.class));
+  }
+
+  @Test
+  void shouldReturnListOfFilesForIdeaId() throws Exception {
+    ideaId = 111L;
+
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/by-idea/" + ideaId))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ideaId").value(ideaId))
+            .andExpect(jsonPath("$.files").isArray())
+            .andExpect(jsonPath("$.files", hasSize(2)));
+  }
+
+  @Test
+  void shouldReturnEmptyListOfFilesForIdeaWithoutFiles() throws Exception {
+    ideaId = 113L;
+
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/by-idea/" + ideaId))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ideaId").value(ideaId))
+            .andExpect(jsonPath("$.files").isArray())
+            .andExpect(jsonPath("$.files", hasSize(0)));
   }
 
 }

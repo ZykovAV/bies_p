@@ -17,10 +17,11 @@ import java.util.UUID;
 @Entity
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "file")
 public class FileModel {
   @Id
-  @GeneratedValue (generator = "UUID")
+  @GeneratedValue(generator = "UUID")
   @GenericGenerator(
           name = "UUID",
           strategy = "org.hibernate.id.UUIDGenerator"
