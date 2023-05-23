@@ -1,6 +1,6 @@
 spring:
   liquibase:
-    enabled: false
+    enabled: true
   datasource:
     url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1
     username: sa
@@ -11,6 +11,6 @@ spring:
       enabled: true
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
 
 

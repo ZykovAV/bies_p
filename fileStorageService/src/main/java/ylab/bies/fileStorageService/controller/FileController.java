@@ -5,8 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +16,11 @@ import ylab.bies.fileStorageService.exception.ErrorResponse;
 import ylab.bies.fileStorageService.service.FileService;
 
 @RestController
+@RequestMapping(value = "api/v1/files")
 @RequiredArgsConstructor
-@RequestMapping(value = "api/v1/files", produces = MediaType.APPLICATION_JSON_VALUE)
+@Slf4j
 public class FileController {
 
-  private final Logger logger = LoggerFactory.getLogger(FileController.class);
   private final FileService fileService;
 
   @Operation(
@@ -29,8 +28,7 @@ public class FileController {
           responses = {
                   @ApiResponse(
                           responseCode = "200",
-                          description = "OK",
-                          useReturnTypeSchema = true),
+                          description = "OK"),
                   @ApiResponse(
                           responseCode = "500",
                           description = "Internal server error",
@@ -73,8 +71,8 @@ public class FileController {
   )
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<Void> saveFile(@RequestParam("idea_id") Long ideaId,
-                                       @RequestParam MultipartFile file) throws Exception {
-    logger.info("File received: " + file.getOriginalFilename());
+                                       @RequestParam MultipartFile file) {
+    log.info("File received: " + file.getOriginalFilename());
     //TODO: token logic to be updated
     String dummyToken = "test";
     fileService.addFile(ideaId, file, dummyToken);

@@ -1,21 +1,23 @@
 package ylab.bies.fileStorageService.config;
 
 import io.minio.MinioClient;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConfigurationProperties(prefix = "s3.minio")
+@Getter
+@Setter
 public class MinioConfig {
 
-  @Value("${s3.minio.endpoint}")
   private String endpoint;
-
-  @Value("${s3.minio.access-key}")
   private String accessKey;
-
-  @Value("${s3.minio.secret-key}")
   private String secretKey;
+  private String bucket;
 
   @Bean
   public MinioClient minioClient() {

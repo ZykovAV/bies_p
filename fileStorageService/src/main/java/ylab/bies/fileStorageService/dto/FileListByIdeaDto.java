@@ -1,10 +1,14 @@
 package ylab.bies.fileStorageService.dto;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
+@RequiredArgsConstructor
 public class FileListByIdeaDto {
   private Long ideaId;
   private List<FileDto> files;

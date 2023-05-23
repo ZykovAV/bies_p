@@ -8,7 +8,7 @@ import ylab.bies.fileStorageService.entity.FileModel;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
-public interface FileModelToFileDtoMapper {
+public interface FileMapper {
   @Mapping(target = "fileId", source = "id")
   FileDto toFileDto(FileModel fileModel);
 

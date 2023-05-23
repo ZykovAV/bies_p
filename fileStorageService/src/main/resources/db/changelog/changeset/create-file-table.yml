@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      author: egorbacheva
+      id: create-file-table
+      changes:
+        - createTable:
+            tableName: file
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: idea_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content_type
+                  type: varchar
+              - column:
+                  name: file_name
+                  type: varchar
+                  constraints:
+                    nullable: false
+                    checkConstraint: "CHECK (file_name <> '')"
+              - column:
+                  name: file_size
+                  type: bigint

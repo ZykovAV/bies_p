@@ -1,10 +1,14 @@
 package ylab.bies.fileStorageService.dto;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
+@RequiredArgsConstructor
 public class FileDto {
   private UUID fileId;
   private String fileName;
