@@ -1,6 +1,9 @@
 package ylab.bies.userservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.keycloak.OAuth2Constants;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -36,6 +39,16 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     @Override
     public AccessTokenResponse getToken(String username, String password) {
-        return null;
+        try (Keycloak keycloak = KeycloakBuilder.builder()
+                .grantType(OAuth2Constants.PASSWORD)
+                .serverUrl(configuration.getServerUrl())
+                .clientId(configuration.getClientId())
+                .clientSecret(configuration.getClientSecret())
+                .realm(configuration.getRealm())
+                .username(username)
+                .password(password)
+                .build()) {
+            return keycloak.tokenManager().getAccessToken();
+        }
     }
 }
