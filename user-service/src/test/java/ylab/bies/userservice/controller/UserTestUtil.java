@@ -63,6 +63,7 @@ public class UserTestUtil {
 
     public static boolean isUserResponseValid(RegisterRequest request, UserResponse response, UUID userId) {
         return response.getId().equals(userId)
+                && response.getUsername().equals(request.getUsername())
                 && response.getEmail().equals(request.getEmail())
                 && response.getFirstName().equals(request.getFirstName())
                 && response.getLastName().equals(request.getLastName())

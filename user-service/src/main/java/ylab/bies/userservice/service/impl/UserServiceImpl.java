@@ -43,7 +43,9 @@ public class UserServiceImpl implements UserService {
             UUID userId = getUserIdFromResponse(keycloakResponse);
             keycloakService.assignRoles(String.valueOf(userId), configuration.getUserDefaultRoles());
             User user = mapper.toUser(request);
-            return mapper.toUserRepose(create(user, userId));
+            UserResponse userResponse = mapper.toUserResponse(create(user, userId));
+            userResponse.setUsername(keycloakUser.getUsername());
+            return userResponse;
         }
     }
 

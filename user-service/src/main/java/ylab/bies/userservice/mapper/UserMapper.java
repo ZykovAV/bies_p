@@ -9,7 +9,7 @@ import ylab.bies.userservice.entity.User;
 
 @Mapper(componentModel = "spring", uses = CredentialRepresentationMapper.class)
 public interface UserMapper {
-    UserResponse toUserRepose(User user);
+    UserResponse toUserResponse(User user);
 
     User toUser(RegisterRequest request);
 
