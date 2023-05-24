@@ -6,7 +6,6 @@ import javax.validation.constraints.NotNull;
 
 @Setter
 @Getter
-@RequiredArgsConstructor
 public class IdeaDraftRequestDto {
 
     @NotNull

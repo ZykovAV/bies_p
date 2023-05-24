@@ -20,9 +20,16 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
+import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 import ylab.bies.ideaservice.service.IdeaService;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -85,6 +92,8 @@ public class IdeaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
+
+
 }
 
 

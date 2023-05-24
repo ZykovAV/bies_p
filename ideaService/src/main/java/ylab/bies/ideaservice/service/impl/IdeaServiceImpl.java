@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
+import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 import ylab.bies.ideaservice.entity.Idea;
 import ylab.bies.ideaservice.mapper.IdeaMapper;
 import ylab.bies.ideaservice.repository.IdeaRepository;
@@ -14,7 +15,10 @@ import ylab.bies.ideaservice.util.AccessTokenDecoder;
 import ylab.bies.ideaservice.util.enums.Status;
 
 import javax.transaction.Transactional;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static ylab.bies.ideaservice.util.enums.Status.DRAFT;
 
@@ -28,6 +32,7 @@ public class IdeaServiceImpl implements IdeaService {
     private final IdeaRepository ideaRepository;
     private final AccessTokenDecoder decoder;
     private final IdeaMapper ideaMapper;
+
 
     @Transactional
     public IdeaDraftResponseDto createDraftIdea(String token, IdeaDraftRequestDto draftRequestDto) {

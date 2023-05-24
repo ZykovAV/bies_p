@@ -10,7 +10,6 @@ import java.util.UUID;
 @Table(name = "ideas")
 @Getter
 @Setter
-@RequiredArgsConstructor
 public class Idea {
 
     @Id
