@@ -6,13 +6,13 @@ public enum Status {
     ACCEPTED(3),
     REJECTED(4);
 
-    private final int value;
+    private final Integer value;
 
-    Status(int value) {
+    Status(Integer value) {
         this.value = value;
     }
 
-    public int getValue() {
+    public Integer getValue() {
         return this.value;
     }
 }

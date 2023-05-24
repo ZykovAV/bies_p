@@ -1,20 +1,27 @@
 package ylab.bies.ideaservice.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ylab.bies.ideaservice.repository.VoteRepository;
 import ylab.bies.ideaservice.service.VoteService;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class VoteServiceImpl implements VoteService {
+
     private final VoteRepository voteRepository;
 
-    public VoteServiceImpl(VoteRepository voteRepository) {
-        this.voteRepository = voteRepository;
+    @Override
+    public int getRating(Long ideaId) {
+        return voteRepository.getLikesCount(ideaId) - voteRepository.getDislikesCount(ideaId);
     }
 
-    public Boolean getVoteOfUser(Long ideaId, UUID userId) {
-        return voteRepository.getVoteOfUser(ideaId, userId);
+    @Override
+    public Boolean getVoteOfUser(UUID userId, Long ideaId) {
+        return voteRepository.getVoteOfUser(userId, ideaId);
     }
 }

@@ -30,7 +30,6 @@ public class Idea {
     private UUID userId;
 
     @Column(name = "status")
-    private int status;
-
+    private Integer status;
 
 }

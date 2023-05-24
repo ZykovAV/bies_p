@@ -11,6 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlGroup;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -20,15 +22,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
-import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 import ylab.bies.ideaservice.service.IdeaService;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -93,6 +91,36 @@ public class IdeaControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
+
+//    @Test
+//    @DisplayName("Get an existing idea. Should be successful.")
+//    @SqlGroup({
+//            @Sql(value = "classpath:init/ideas-test-data.sql", executionPhase = BEFORE_TEST_METHOD)
+//    })
+//    public void getAnExistingIdeaById() throws Exception {
+//        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/1")
+//                        .header("Authorization", "test-token"))
+//                .andExpect(status().isOk())
+//                .andExpect(jsonPath("$.id", is(1)))
+//                .andExpect(jsonPath("$.name", is("name-1")))
+//                .andExpect(jsonPath("$.text", is("text-1")));
+//    }
+
+    @Test
+    @DisplayName("Get an non-existent idea. Should return 404.")
+    public void getAnNotExistingIdeaById() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/100500")
+                        .header("Authorization", "test-token"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Get idea with not valid id. Should return 400.")
+    public void getIdeaByBadId() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/BAD_ID")
+                        .header("Authorization", "test-token"))
+                .andExpect(status().isBadRequest());
+    }
 
 }
 

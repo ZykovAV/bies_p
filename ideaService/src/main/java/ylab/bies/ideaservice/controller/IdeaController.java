@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
+import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
+import ylab.bies.ideaservice.entity.Idea;
 import ylab.bies.ideaservice.service.IdeaService;
 
 import javax.validation.Valid;
@@ -39,4 +41,18 @@ public class IdeaController {
         log.info("Response with created idea: {}", response);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
+    @GetMapping(value = "/{id}")
+    @Operation(summary = "Request for a info about idea")
+    public ResponseEntity<IdeaResponseDto> getById(@RequestHeader("Authorization") String token,
+                                                   @PathVariable Long id) {
+        IdeaResponseDto response = ideaService.findById(token, id);
+        if (response == null) {
+            log.info("Idea with id={} not found", id);
+            return ResponseEntity.notFound().build();
+        }
+        log.info("Response with idea: {}", response);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
 }
