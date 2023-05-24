@@ -2,6 +2,7 @@ package ylab.bies.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -15,22 +16,25 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ylab.bies.userservice.dto.LoginRequest;
 import ylab.bies.userservice.dto.RegisterRequest;
 import ylab.bies.userservice.dto.UserResponse;
 import ylab.bies.userservice.repository.UserRepository;
 import ylab.bies.userservice.service.KeycloakService;
 
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static ylab.bies.userservice.controller.UserTestUtil.*;
 
 @SpringBootTest
@@ -117,6 +121,68 @@ public class UserAuthControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
 
         assertThat(repository.findAll()).isEmpty();
+    }
+
+    @Test
+    void login_Successfully() throws Exception {
+        LoginRequest request = getValidLoginRequest();
+        AccessTokenResponse tokenResponse = getAccessTokenResponse();
+
+        when(keycloakService.getToken(request.getUsername(), request.getPassword())).thenReturn(tokenResponse);
+
+        mockMvc.perform(post("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(mapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.access_token", equalTo(tokenResponse.getToken())))
+                .andExpect(jsonPath("$.refresh_token", equalTo(tokenResponse.getRefreshToken())))
+                .andExpect(jsonPath("$.token_type", equalTo(tokenResponse.getTokenType())))
+                .andExpect(jsonPath("$.session_state", equalTo(tokenResponse.getSessionState())))
+                .andExpect(jsonPath("$.scope", equalTo(tokenResponse.getScope())));
+
+        verify(keycloakService, times(1)).getToken(request.getUsername(), request.getPassword());
+    }
+
+    @Test
+    void login_ThrowException_InvalidCredentials() throws Exception {
+        LoginRequest request = getValidLoginRequest();
+
+        when(keycloakService.getToken(request.getUsername(), request.getPassword()))
+                .thenThrow(NotAuthorizedException.class);
+
+        mockMvc.perform(post("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(mapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
+
+        verify(keycloakService, times(1)).getToken(request.getUsername(), request.getPassword());
+    }
+
+    @Test
+    void login_EmptyBody() throws Exception {
+        mockMvc.perform(post("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(keycloakService, never()).getToken(anyString(), anyString());
+    }
+
+    @Test
+    void login_InvalidBody() throws Exception {
+        LoginRequest request = getInvalidLoginRequest();
+
+        mockMvc.perform(post("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(mapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(keycloakService, never()).getToken(anyString(), anyString());
     }
 }
 

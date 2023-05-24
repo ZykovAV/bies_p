@@ -1,6 +1,8 @@
 package ylab.bies.userservice.controller;
 
 import lombok.experimental.UtilityClass;
+import org.keycloak.representations.AccessTokenResponse;
+import ylab.bies.userservice.dto.LoginRequest;
 import ylab.bies.userservice.dto.RegisterRequest;
 import ylab.bies.userservice.dto.RoleResponse;
 import ylab.bies.userservice.dto.UserResponse;
@@ -34,8 +36,34 @@ public class UserTestUtil {
         return request;
     }
 
+    public static LoginRequest getValidLoginRequest() {
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername("username");
+        loginRequest.setPassword("password");
+        return loginRequest;
+    }
+
+    public static LoginRequest getInvalidLoginRequest() {
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername("");
+        loginRequest.setPassword("password");
+        return loginRequest;
+    }
+
+
+    public static AccessTokenResponse getAccessTokenResponse() {
+        AccessTokenResponse tokenResponse = new AccessTokenResponse();
+        tokenResponse.setToken("token");
+        tokenResponse.setRefreshToken("refreshToken");
+        tokenResponse.setTokenType("Bearer");
+        tokenResponse.setSessionState(String.valueOf(UUID.randomUUID()));
+        tokenResponse.setScope("profile email");
+        return tokenResponse;
+    }
+
     public static boolean isUserResponseValid(RegisterRequest request, UserResponse response, UUID userId) {
         return response.getId().equals(userId)
+                && response.getUsername().equals(request.getUsername())
                 && response.getEmail().equals(request.getEmail())
                 && response.getFirstName().equals(request.getFirstName())
                 && response.getLastName().equals(request.getLastName())

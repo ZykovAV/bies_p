@@ -11,6 +11,7 @@ import ylab.bies.userservice.config.ApplicationConfiguration;
 import ylab.bies.userservice.dto.*;
 import ylab.bies.userservice.entity.Role;
 import ylab.bies.userservice.entity.User;
+import ylab.bies.userservice.exception.InvalidCredentialsException;
 import ylab.bies.userservice.exception.UserAlreadyExistException;
 import ylab.bies.userservice.exception.UserRegistrationException;
 import ylab.bies.userservice.mapper.UserMapper;
@@ -19,6 +20,7 @@ import ylab.bies.userservice.repository.UserRepository;
 import ylab.bies.userservice.service.KeycloakService;
 import ylab.bies.userservice.service.UserService;
 
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
 import java.util.UUID;
 
@@ -41,13 +43,19 @@ public class UserServiceImpl implements UserService {
             UUID userId = getUserIdFromResponse(keycloakResponse);
             keycloakService.assignRoles(String.valueOf(userId), configuration.getUserDefaultRoles());
             User user = mapper.toUser(request);
-            return mapper.toUserRepose(create(user, userId));
+            UserResponse userResponse = mapper.toUserResponse(create(user, userId));
+            userResponse.setUsername(keycloakUser.getUsername());
+            return userResponse;
         }
     }
 
     @Override
     public AccessTokenResponse login(LoginRequest request) {
-        return null;
+        try {
+            return keycloakService.getToken(request.getUsername(), request.getPassword());
+        } catch (NotAuthorizedException e) {
+            throw new InvalidCredentialsException("Invalid login or password");
+        }
     }
 
     @Override

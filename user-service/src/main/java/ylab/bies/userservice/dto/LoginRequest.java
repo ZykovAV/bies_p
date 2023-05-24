@@ -10,9 +10,9 @@ import javax.validation.constraints.NotBlank;
 @Setter
 @ToString
 public class LoginRequest {
-    @NotBlank
+    @NotBlank(message = "Password can't be null or empty")
     private String username;
-    @NotBlank
+    @NotBlank(message = "Password can't be null or empty")
     @ToString.Exclude
     private String password;
 }
