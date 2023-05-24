@@ -32,4 +32,4 @@ s3:
     endpoint: http://127.0.0.1:9000
     access-key: minioadmin
     secret-key: minioadmin
-  bucket: business-idea-service-files
+    bucket: business-idea-service-files
