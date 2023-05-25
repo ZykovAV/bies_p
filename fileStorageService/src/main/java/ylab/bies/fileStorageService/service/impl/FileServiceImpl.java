@@ -5,12 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import ylab.bies.fileStorageService.config.MinioConfig;
+import ylab.bies.fileStorageService.config.S3Config;
 import ylab.bies.fileStorageService.dto.FileListByIdeaDto;
 import ylab.bies.fileStorageService.entity.FileModel;
-import ylab.bies.fileStorageService.exception.FailedToSaveFileException;
 import ylab.bies.fileStorageService.exception.IdeaOwnershipException;
 import ylab.bies.fileStorageService.exception.InvalidSaveRequestException;
+import ylab.bies.fileStorageService.exception.OperationFailedException;
+import ylab.bies.fileStorageService.exception.RequestedFileNotFoundException;
 import ylab.bies.fileStorageService.mapper.FileMapper;
 import ylab.bies.fileStorageService.repository.FileRepository;
 import ylab.bies.fileStorageService.service.FileService;
@@ -25,9 +26,9 @@ import java.util.UUID;
 @Slf4j
 public class FileServiceImpl implements FileService {
 
-  private final MinioConfig minioConfig;
   private final FileRepository fileRepository;
   private final S3Service s3Service;
+  private final S3Config s3Config;
   private final IdeaServiceClient ideaServiceClient;
   private final FileMapper mapper;
 
@@ -48,10 +49,10 @@ public class FileServiceImpl implements FileService {
     log.info("Id {} generated for file with name {} and idea id {}", fileModel.getId(), fileModel.getFileName(), ideaId);
 
     try {
-      s3Service.putObject(minioConfig.getBucket(), objectKey, file);
+      s3Service.putObject(s3Config.getIdeaFilesBucket(), objectKey, file);
     } catch (Exception e) {
       log.error("Failed to save file ", e);
-      throw new FailedToSaveFileException();
+      throw new OperationFailedException("Failed to save file");
     }
     log.info("Metadata for file with id {} saved to db", fileModel.getId());
   }
@@ -71,9 +72,28 @@ public class FileServiceImpl implements FileService {
     return result;
   }
 
+  @Transactional(readOnly = true)
   @Override
   public Optional<FileModel> getByFileId(UUID fileId) {
     return fileRepository.findById(fileId);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  @Override
+  public void removeFile(UUID fileId) {
+    FileModel fileModelToRemove = fileRepository.findById(fileId)
+            .orElseThrow(RequestedFileNotFoundException::new);
+
+    fileRepository.delete(fileModelToRemove);
+
+    String key = getObjectKey(fileModelToRemove.getIdeaId(), fileModelToRemove.getId());
+    try {
+      s3Service.removeObject(s3Config.getIdeaFilesBucket(), key);
+    } catch (Exception e) {
+      log.error("Failed to remove file {} from S3", key, e);
+      throw new OperationFailedException("Failed to remove file");
+    }
+    log.info("File with {} was removed (or didn't exist) from S3", key);
   }
 
 }

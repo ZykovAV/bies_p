@@ -27,9 +27,8 @@ server:
   port: 8080
 
 s3:
-  minio:
-    #To be updated
-    endpoint: http://127.0.0.1:9000
-    access-key: minioadmin
-    secret-key: minioadmin
-    bucket: business-idea-service-files
+  #To be updated
+  url: http://127.0.0.1:9000
+  login: minioadmin
+  password: minioadmin
+  idea-files-bucket: business-idea-files

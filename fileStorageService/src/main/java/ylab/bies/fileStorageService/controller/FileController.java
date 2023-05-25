@@ -1,5 +1,6 @@
 package ylab.bies.fileStorageService.controller;
 
+import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,6 +15,11 @@ import org.springframework.web.multipart.MultipartFile;
 import ylab.bies.fileStorageService.dto.FileListByIdeaDto;
 import ylab.bies.fileStorageService.exception.ErrorResponse;
 import ylab.bies.fileStorageService.service.FileService;
+
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "api/v1/files")
@@ -77,6 +83,12 @@ public class FileController {
     String dummyToken = "test";
     fileService.addFile(ideaId, file, dummyToken);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @DeleteMapping("/{file_id}")
+  public ResponseEntity<Void> removeFile(@PathVariable ("file_id") UUID fileId) {
+    fileService.removeFile(fileId);
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 
 }

@@ -7,12 +7,26 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ylab.bies.fileStorageService.exception.ErrorResponse;
 import ylab.bies.fileStorageService.exception.IdeaOwnershipException;
 import ylab.bies.fileStorageService.exception.InvalidSaveRequestException;
+import ylab.bies.fileStorageService.exception.RequestedFileNotFoundException;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class DefaultExceptionHandler {
+
+  @ExceptionHandler(RequestedFileNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleRequestedFileNotFoundException(RequestedFileNotFoundException e,
+                                                                            HttpServletRequest request) {
+    ErrorResponse errorResponse = new ErrorResponse(
+            request.getRequestURI(),
+            e.getMessage(),
+            HttpStatus.NOT_FOUND.value(),
+            LocalDateTime.now()
+    );
+
+    return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+  }
 
   @ExceptionHandler(IdeaOwnershipException.class)
   public ResponseEntity<ErrorResponse> handleIdeaOwnershipException(IdeaOwnershipException e,

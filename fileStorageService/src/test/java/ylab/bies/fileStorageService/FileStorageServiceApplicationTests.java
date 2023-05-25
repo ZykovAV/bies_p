@@ -1,7 +1,5 @@
 package ylab.bies.fileStorageService;
 
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
 import io.minio.errors.ServerException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,11 +18,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ylab.bies.fileStorageService.entity.FileModel;
 import ylab.bies.fileStorageService.service.FileService;
 import ylab.bies.fileStorageService.service.impl.IdeaServiceClientImpl;
+import ylab.bies.fileStorageService.service.impl.MinioServiceImpl;
 
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -44,7 +44,7 @@ class FileStorageServiceApplicationTests {
   private FileService fileService;
 
   @MockBean
-  private MinioClient minioClient;
+  private MinioServiceImpl minioService;
   @MockBean
   private IdeaServiceClientImpl ideaServiceClient;
 
@@ -59,7 +59,8 @@ class FileStorageServiceApplicationTests {
             MediaType.TEXT_PLAIN_VALUE,
             "Hello world".getBytes()
     );
-    when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(null);
+    doNothing().when(minioService).putObject(anyString(), anyString(), any(MockMultipartFile.class));
+    doNothing().when(minioService).removeObject(anyString(), anyString());
     when(ideaServiceClient.validateIdeaOwner(anyLong(), anyString())).thenReturn(true);
   }
 
@@ -73,15 +74,7 @@ class FileStorageServiceApplicationTests {
             .andDo(print())
             .andExpect(status().isCreated());
 
-    ArgumentCaptor<PutObjectArgs> argumentCaptor = ArgumentCaptor.forClass(PutObjectArgs.class);
-    Mockito.verify(minioClient, only()).putObject(argumentCaptor.capture());
-
-    //check arguments sent to S3
-    PutObjectArgs argumentsSentToS3 = argumentCaptor.getValue();
-    UUID fileUUIDSentToS3 = UUID.fromString(argumentsSentToS3.object().split("/")[1]);
-    Long ideaIdSentToS3 = Long.parseLong(argumentsSentToS3.object().split("/")[0]);
-    assertEquals(ideaId, ideaIdSentToS3);
-    assertEquals(mockMultipartFile.getContentType(), argumentsSentToS3.contentType());
+    UUID fileUUIDSentToS3 = getUUIDWithArgumentCaptor();
 
     //check object saved to database
     FileModel fileModelSavedToDB = fileService.getByFileId(fileUUIDSentToS3).orElse(null);
@@ -90,6 +83,14 @@ class FileStorageServiceApplicationTests {
     assertEquals(mockMultipartFile.getOriginalFilename(), fileModelSavedToDB.getFileName());
     assertEquals(mockMultipartFile.getContentType(), fileModelSavedToDB.getContentType());
     assertEquals(mockMultipartFile.getSize(), fileModelSavedToDB.getFileSize());
+  }
+
+  private UUID getUUIDWithArgumentCaptor() throws Exception {
+    ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
+    Mockito.verify(minioService, only()).putObject(anyString(), argumentCaptor.capture(), any(MockMultipartFile.class));
+
+    String objectKeySentToS3 = argumentCaptor.getValue();
+    return UUID.fromString(objectKeySentToS3.split("/")[1]);
   }
 
   @Test
@@ -112,13 +113,13 @@ class FileStorageServiceApplicationTests {
             .andExpect(jsonPath("$.ideaId").value(ideaId))
             .andExpect(jsonPath("$.files", hasSize(0)));
 
-    verify(minioClient, never()).putObject(any(PutObjectArgs.class));
+    verify(minioService, never()).putObject(anyString(), anyString(), any(MockMultipartFile.class));
   }
 
   @Test
   void shouldNotSaveToDbAndReturnStatus500WhenS3Throws() throws Exception {
     ideaId = 997L;
-    when(minioClient.putObject(any(PutObjectArgs.class))).thenThrow(ServerException.class);
+    doThrow(ServerException.class).when(minioService).putObject(anyString(), anyString(), any(MockMultipartFile.class));
 
     mockMvc.perform(MockMvcRequestBuilders
                     .multipart(HttpMethod.POST, url)
@@ -135,7 +136,7 @@ class FileStorageServiceApplicationTests {
             .andExpect(jsonPath("$.ideaId").value(ideaId))
             .andExpect(jsonPath("$.files", hasSize(0)));
 
-    verify(minioClient, only()).putObject(any(PutObjectArgs.class));
+    verify(minioService, only()).putObject(anyString(), anyString(), any(MockMultipartFile.class));
   }
 
   @Test
@@ -162,6 +163,85 @@ class FileStorageServiceApplicationTests {
             .andExpect(jsonPath("$.ideaId").value(ideaId))
             .andExpect(jsonPath("$.files").isArray())
             .andExpect(jsonPath("$.files", hasSize(0)));
+  }
+
+  @Test
+  void shouldRemoveFileAndReturnStatus200() throws Exception {
+    //put file for removal
+    ideaId = 555L;
+    mockMvc.perform(MockMvcRequestBuilders
+                    .multipart(HttpMethod.POST, url)
+                    .file(mockMultipartFile)
+                    .param("idea_id", ideaId.toString()))
+            .andExpect(status().isCreated());
+
+    //make sure file is there
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/by-idea/" + ideaId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ideaId").value(ideaId))
+            .andExpect(jsonPath("$.files").isArray())
+            .andExpect(jsonPath("$.files", hasSize(1)));
+
+    //get uuid for the saved file
+    UUID fileUUID = getUUIDWithArgumentCaptor();
+
+    //remove file
+    mockMvc.perform(MockMvcRequestBuilders
+                    .delete(url + "/" + fileUUID))
+            .andExpect(status().isOk());
+
+    //make sure file is not there anymore
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/by-idea/" + ideaId))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ideaId").value(ideaId))
+            .andExpect(jsonPath("$.files", hasSize(0)));
+  }
+
+  @Test
+  void shouldReturnStatus404WhenRemoveWithWrongUUID() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+                    .delete(url + "/" + UUID.randomUUID()))
+            .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void shouldNotRemoveAndReturnStatus500WhenS3Throws() throws Exception {
+    doThrow(ServerException.class).when(minioService).removeObject(anyString(), anyString());
+
+    //put file for removal
+    ideaId = 556L;
+    mockMvc.perform(MockMvcRequestBuilders
+                    .multipart(HttpMethod.POST, url)
+                    .file(mockMultipartFile)
+                    .param("idea_id", ideaId.toString()))
+            .andExpect(status().isCreated());
+
+    //make sure file is there
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/by-idea/" + ideaId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ideaId").value(ideaId))
+            .andExpect(jsonPath("$.files").isArray())
+            .andExpect(jsonPath("$.files", hasSize(1)));
+
+    //get uuid for the saved file
+    UUID fileUUID = getUUIDWithArgumentCaptor();
+
+    //try to remove file
+    mockMvc.perform(MockMvcRequestBuilders
+                    .delete(url + "/" + fileUUID))
+            .andExpect(status().isInternalServerError());
+
+    //make sure transaction reverted and file is still there
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/by-idea/" + ideaId))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.ideaId").value(ideaId))
+            .andExpect(jsonPath("$.files", hasSize(1)));
   }
 
 }
