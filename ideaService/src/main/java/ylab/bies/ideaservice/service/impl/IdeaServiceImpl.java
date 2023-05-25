@@ -3,6 +3,7 @@ package ylab.bies.ideaservice.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
 import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
@@ -12,9 +13,7 @@ import ylab.bies.ideaservice.repository.IdeaRepository;
 import ylab.bies.ideaservice.service.IdeaService;
 import ylab.bies.ideaservice.service.VoteService;
 import ylab.bies.ideaservice.util.AccessTokenDecoder;
-import ylab.bies.ideaservice.util.enums.Status;
 
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,6 +32,21 @@ public class IdeaServiceImpl implements IdeaService {
     private final AccessTokenDecoder decoder;
     private final IdeaMapper ideaMapper;
 
+
+    @Override
+    public IdeaResponseDto findById(String token, Long id) {
+        UUID userId = decoder.getUuidFromToken(token);
+        IdeaResponseDto response;
+        Idea idea = ideaRepository.findById(id).orElse(null);
+        if (idea == null) {
+            response = null;
+        } else {
+            response = ideaMapper.ideaEntityToIdeaResponseDto(idea);
+            response.setRating(voteService.getRating(id));
+            response.setUserLike(voteService.getVoteOfUser(userId, id));
+        }
+        return response;
+    }
 
     @Transactional
     public IdeaDraftResponseDto createDraftIdea(String token, IdeaDraftRequestDto draftRequestDto) {

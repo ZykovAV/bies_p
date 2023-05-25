@@ -10,6 +10,11 @@ import java.util.UUID;
 public interface VoteRepository extends JpaRepository<Vote, VotePK> {
 
     @Query("SELECT v.isLike FROM Vote v WHERE v.pk.ideaId=:ideaId AND v.pk.userId=:userId")
-    Boolean getVoteOfUser(Long ideaId, UUID userId);
+    Boolean getVoteOfUser(UUID userId, Long ideaId);
 
+    @Query("SELECT COUNT(v) FROM Vote v WHERE v.pk.ideaId=:ideaId AND v.isLike=true")
+    int getLikesCount(Long ideaId);
+
+    @Query("SELECT COUNT(v) FROM Vote v WHERE v.pk.ideaId=:ideaId AND v.isLike=false")
+    int getDislikesCount(Long ideaId);
 }
