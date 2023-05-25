@@ -1,21 +1,20 @@
 package ylab.bies.ideaservice.dto.request;
 
-
 import lombok.*;
 
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
 
 @Setter
 @Getter
 public class IdeaRequestDto {
 
-    @NotNull
+    @NotBlank
     private Long id;
 
-    @NotNull
+    @NotBlank
     private String name;
 
-    @NotNull
+    @NotBlank
     private String text;
 
 }

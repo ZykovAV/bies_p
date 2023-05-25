@@ -33,7 +33,7 @@ public class IdeaServiceImpl implements IdeaService {
     private final IdeaMapper ideaMapper;
 
 
-    @Override
+    @Transactional(readOnly = true)
     public IdeaResponseDto findById(String token, Long id) {
         UUID userId = decoder.getUuidFromToken(token);
         IdeaResponseDto response;
@@ -47,6 +47,18 @@ public class IdeaServiceImpl implements IdeaService {
         }
         return response;
     }
+
+    @Transactional(readOnly = true)
+    public List<IdeaResponseDto> getAllIdeas() {
+        List<Idea> ideas = ideaRepository.findAllIdeas();
+        log.info("List all ideas: {}", ideas);
+        return ideas.stream()
+                .filter(Objects::nonNull)
+                .map(ideaMapper::ideaEntityToIdeaResponseDto)
+                .peek(responseDto -> responseDto.setUserLike(voteService.getVoteOfUser(responseDto.getUserId(), responseDto.getId())))
+                .collect(Collectors.toList());
+    }
+
 
     @Transactional
     public IdeaDraftResponseDto createDraftIdea(String token, IdeaDraftRequestDto draftRequestDto) {

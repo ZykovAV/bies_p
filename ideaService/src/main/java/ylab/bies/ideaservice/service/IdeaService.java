@@ -8,11 +8,11 @@ import ylab.bies.ideaservice.entity.Idea;
 
 import java.util.List;
 
-@Transactional(readOnly = true)
 public interface IdeaService {
 
     IdeaResponseDto findById(String token, Long id);
 
-    @Transactional
     IdeaDraftResponseDto createDraftIdea(String token, IdeaDraftRequestDto request);
+
+    List<IdeaResponseDto> getAllIdeas();
 }
