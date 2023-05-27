@@ -2,6 +2,14 @@
 application:
   user-default-roles:
     - USER
+# Server configuration
+server:
+  error:
+    whitelabel:
+      enabled: true
+    include-message: always
+    include-binding-errors: always
+    include-exception: false
 # Spring Boot configuration
 spring:
   liquibase:

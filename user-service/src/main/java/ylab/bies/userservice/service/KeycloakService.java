@@ -12,4 +12,6 @@ public interface KeycloakService {
     void assignRoles(String userId, Set<String> roles);
 
     AccessTokenResponse getToken(String username, String password);
+
+    UserRepresentation getUserById(String userId);
 }

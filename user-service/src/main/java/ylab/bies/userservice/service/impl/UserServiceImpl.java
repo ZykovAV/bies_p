@@ -19,6 +19,7 @@ import ylab.bies.userservice.repository.RoleRepository;
 import ylab.bies.userservice.repository.UserRepository;
 import ylab.bies.userservice.service.KeycloakService;
 import ylab.bies.userservice.service.UserService;
+import ylab.bies.userservice.util.AccessTokenManager;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
@@ -33,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final KeycloakService keycloakService;
     private final UserMapper mapper;
+    private final AccessTokenManager tokenManager;
 
     @Override
     @Transactional
@@ -40,12 +42,15 @@ public class UserServiceImpl implements UserService {
         UserRepresentation keycloakUser = mapper.toUserRepresentation(request);
         try (Response keycloakResponse = keycloakService.register(keycloakUser)) {
             handleRegistrationResponse(keycloakResponse);
+
             UUID userId = getUserIdFromResponse(keycloakResponse);
+
             keycloakService.assignRoles(String.valueOf(userId), configuration.getUserDefaultRoles());
+
             User user = mapper.toUser(request);
-            UserResponse userResponse = mapper.toUserResponse(create(user, userId));
-            userResponse.setUsername(keycloakUser.getUsername());
-            return userResponse;
+            user = create(user, userId);
+
+            return mapper.toUserResponse(user, keycloakUser);
         }
     }
 
@@ -54,13 +59,19 @@ public class UserServiceImpl implements UserService {
         try {
             return keycloakService.getToken(request.getUsername(), request.getPassword());
         } catch (NotAuthorizedException e) {
+            log.info("Failed to login a user. Invalid login or password");
             throw new InvalidCredentialsException("Invalid login or password");
         }
     }
 
     @Override
-    public UserResponse getProfile(String token) {
-        return null;
+    public UserResponse getProfile() {
+        UUID userId = tokenManager.getUserIdFromToken();
+
+        User user = repository.findById(userId).get();
+        UserRepresentation keycloakUser = keycloakService.getUserById(String.valueOf(userId));
+
+        return mapper.toUserResponse(user, keycloakUser);
     }
 
     @Override
@@ -75,9 +86,11 @@ public class UserServiceImpl implements UserService {
 
     private void handleRegistrationResponse(Response response) {
         if (response.getStatusInfo() == Response.Status.CONFLICT) {
+            log.info("Failed to register a new User. User with that username or email is already exists");
             throw new UserAlreadyExistException("User with that username or email is already exists");
         }
         if (response.getStatusInfo() != Response.Status.CREATED) {
+            log.info("Failed to register a new User.");
             throw new UserRegistrationException("Failed to register a new user");
         }
     }

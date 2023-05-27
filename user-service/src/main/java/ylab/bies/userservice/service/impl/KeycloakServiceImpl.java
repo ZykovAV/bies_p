@@ -51,4 +51,9 @@ public class KeycloakServiceImpl implements KeycloakService {
             return keycloak.tokenManager().getAccessToken();
         }
     }
+
+    @Override
+    public UserRepresentation getUserById(String userId) {
+        return realmResource.users().get(userId).toRepresentation();
+    }
 }
