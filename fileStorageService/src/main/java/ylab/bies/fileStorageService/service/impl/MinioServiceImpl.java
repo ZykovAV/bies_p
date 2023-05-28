@@ -5,6 +5,7 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ylab.bies.fileStorageService.config.S3Config;
@@ -16,6 +17,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 @Service
+@Primary
 @Slf4j
 public class MinioServiceImpl implements S3Service {
 

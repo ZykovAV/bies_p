@@ -83,6 +83,12 @@ public class FileServiceImpl implements FileService {
   public void removeFile(UUID fileId) {
     FileModel fileModelToRemove = fileRepository.findById(fileId)
             .orElseThrow(RequestedFileNotFoundException::new);
+    long ideaId = fileModelToRemove.getIdeaId();
+
+    String dummyToken = "test";
+    if (dummyToken == null || !ideaServiceClient.validateIdeaOwner(ideaId, dummyToken)) {
+      throw new IdeaOwnershipException(ideaId);
+    }
 
     fileRepository.delete(fileModelToRemove);
 

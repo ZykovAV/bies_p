@@ -189,7 +189,7 @@ class FileStorageServiceApplicationTests {
     //remove file
     mockMvc.perform(MockMvcRequestBuilders
                     .delete(url + "/" + fileUUID))
-            .andExpect(status().isOk());
+            .andExpect(status().isNoContent());
 
     //make sure file is not there anymore
     mockMvc.perform(MockMvcRequestBuilders
@@ -235,7 +235,7 @@ class FileStorageServiceApplicationTests {
                     .delete(url + "/" + fileUUID))
             .andExpect(status().isInternalServerError());
 
-    //make sure transaction reverted and file is still there
+    //make sure transaction is reverted and file is still in db
     mockMvc.perform(MockMvcRequestBuilders
                     .get(url + "/by-idea/" + ideaId))
             .andDo(print())
