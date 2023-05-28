@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +19,7 @@ import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 import ylab.bies.ideaservice.service.IdeaService;
 
 import javax.validation.Valid;
-import java.util.List;
+import javax.validation.constraints.NotNull;
 
 
 @RestController
@@ -58,10 +60,10 @@ public class IdeaController {
 
     @GetMapping
     @Operation(summary = "Getting a list of ideas", description = "List of all users ideas")
-    public ResponseEntity<List<IdeaResponseDto>> getAllIdeas(@RequestHeader("Authorization") String token) {
-        List<IdeaResponseDto> ideas = ideaService.getAllIdeas();
+    public ResponseEntity<Page<IdeaResponseDto>> getAllIdeas(@RequestHeader("Authorization") String token,
+                                                             @NotNull final Pageable pageable) {
+        Page<IdeaResponseDto> ideas = ideaService.getAllIdeas(pageable);
         log.info(String.format("Ideas %s received successfully", ideas));
         return new ResponseEntity<>(ideas, HttpStatus.OK);
     }
-
 }

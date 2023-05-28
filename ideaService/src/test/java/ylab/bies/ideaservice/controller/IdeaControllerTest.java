@@ -7,6 +7,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -21,16 +23,15 @@ import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
 import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 import ylab.bies.ideaservice.service.IdeaService;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 
 @RunWith(SpringRunner.class)
@@ -121,37 +122,52 @@ public class IdeaControllerTest {
                 new IdeaResponseDto(2L, "Idea 2", "Some text 2", 3, testingUserId, 2, false),
                 new IdeaResponseDto(3L, "Idea 3", "Some text 3", 8, testingUserId, 2, false)
         );
+        Page<IdeaResponseDto> testPageIdeas = new PageImpl<>(ideas);
 
         //todo заполнить тестовыми данными, когда появится эндпойнт сохранения идеи (сохранить ideas через него)
 
         mockMvc.perform(get("/api/v1/ideas")
                         .header("Authorization", "test-token")
+                        .content(objectMapper.writeValueAsString(testPageIdeas))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
-                .andExpect(jsonPath("$[0].id", is(1)))
-                .andExpect(jsonPath("$[0].name", is("Idea 1")))
-                .andExpect(jsonPath("$[0].text", is("Some text 1")))
-                .andExpect(jsonPath("$[0].rating", is(5)))
-                .andExpect(jsonPath("$[0].userId", is(testingUserId)))
-                .andExpect(jsonPath("$[0].status", is(3)))
-                .andExpect(jsonPath("$[0].userLike", is(true)));
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Idea 1"))
+                .andExpect(jsonPath("$.content[0].description").value("Some text 1"))
+                .andExpect(jsonPath("$.content[0].rating").value(5))
+                .andExpect(jsonPath("$.content[0].userId").value(testingUserId))
+                .andExpect(jsonPath("$.content[0].status").value(3))
+                .andExpect(jsonPath("$.content[0].userLike").value(true));
 
     }
 
     @Test
     @DisplayName("Get All Ideas. Returning a list without ideas.")
     public void testGetAllIdeas_returnsListWithoutIdeas() throws Exception {
+        List<IdeaResponseDto> testList = new ArrayList<>();
+        Page<IdeaResponseDto> testPage = new PageImpl<>(testList); //emptyPage
 
         mockMvc.perform(get("/api/v1/ideas")
                         .header("Authorization", "test-token")
+                        .content(objectMapper.writeValueAsString(testPage))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
-
-
+                .andExpect(jsonPath("$.content").isEmpty());
     }
 
+    @Test
+    @DisplayName("Get All Ideas. Test Pagination.")
+    public void testGetAllIdeas_testPagination() throws Exception {
+
+        mockMvc.perform(get("/api/v1/ideas")
+                        .header("Authorization", "test-token")
+                        .param("page", "0")
+                        .param("limit", "4")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
 
 
 //    @Test
