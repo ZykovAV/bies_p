@@ -78,6 +78,13 @@ public class FileServiceImpl implements FileService {
     return fileRepository.findById(fileId);
   }
 
+  /**
+   * Method for removing file by id both from database and from s3. </b>
+   * If no files with this id were found in the database, then {@link RequestedFileNotFoundException} is thrown. </b>
+   * If a file with this id is found in the db, but not found in s3 file storage - then no exceptions will
+   * be thrown, and the item with this id will be removed from db quietly, so that db and s3 are consistent.
+   * @param fileId - uuid of file to be removed
+   */
   @Transactional(rollbackFor = Exception.class)
   @Override
   public void removeFile(UUID fileId) {

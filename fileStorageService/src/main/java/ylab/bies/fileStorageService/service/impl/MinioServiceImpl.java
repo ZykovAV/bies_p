@@ -17,7 +17,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 @Service
-@Primary
 @Slf4j
 public class MinioServiceImpl implements S3Service {
 
