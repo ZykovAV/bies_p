@@ -23,7 +23,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.core.authority.AuthorityUtils.createAuthorityList;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -73,7 +72,6 @@ public class UserProfileControllerTest {
         MvcResult result = mockMvc.perform(get("/api/v1/users/profile")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(userId)))
-                                .authorities(createAuthorityList("ROLE_USER"))
                         ))
                 .andDo(print())
                 .andExpect(status().isOk())
