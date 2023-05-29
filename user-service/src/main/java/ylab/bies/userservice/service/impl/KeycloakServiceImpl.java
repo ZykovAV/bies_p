@@ -66,4 +66,9 @@ public class KeycloakServiceImpl implements KeycloakService {
 
         realmResource.users().get(userId).update(user);
     }
+
+    @Override
+    public void changePassword(String userId, String newPassword) {
+        throw new UnsupportedOperationException();
+    }
 }

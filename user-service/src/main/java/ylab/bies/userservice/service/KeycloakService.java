@@ -16,4 +16,6 @@ public interface KeycloakService {
     UserRepresentation getUserById(String userId);
 
     void changeFullName(String userId, String firstName, String lastName);
+
+    void changePassword(String userId, String newPassword);
 }

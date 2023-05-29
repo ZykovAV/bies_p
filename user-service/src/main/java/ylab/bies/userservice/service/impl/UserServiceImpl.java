@@ -65,6 +65,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public UserResponse getProfile() {
         UUID userId = tokenManager.getUserIdFromToken();
 
@@ -75,6 +76,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public ChangeFullNameResponse changeFullName(ChangeFullNameRequest request) {
         UUID userId = tokenManager.getUserIdFromToken();
 
@@ -90,7 +93,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-
+        throw new UnsupportedOperationException();
     }
 
     private void handleRegistrationResponse(Response response) {
