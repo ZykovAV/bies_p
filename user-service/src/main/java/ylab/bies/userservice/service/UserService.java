@@ -10,7 +10,7 @@ public interface UserService {
 
     UserResponse getProfile();
 
-    ChangeNameResponse changeName(ChangeNameRequest request);
+    ChangeFullNameResponse changeFullName(ChangeFullNameRequest request);
 
     void changePassword(ChangePasswordRequest request);
 

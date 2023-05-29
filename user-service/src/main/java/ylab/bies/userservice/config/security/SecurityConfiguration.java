@@ -25,6 +25,7 @@ public class SecurityConfiguration {
                         .antMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
                         .antMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll()
                         .antMatchers(HttpMethod.GET, "/api/v1/users/profile").authenticated()
+                        .antMatchers(HttpMethod.PUT, "/api/v1/users/profile/fullName").authenticated()
                         .anyRequest().denyAll())
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)

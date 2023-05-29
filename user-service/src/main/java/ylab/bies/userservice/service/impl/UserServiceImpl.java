@@ -75,8 +75,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ChangeNameResponse changeName(ChangeNameRequest request) {
-        return null;
+    public ChangeFullNameResponse changeFullName(ChangeFullNameRequest request) {
+        UUID userId = tokenManager.getUserIdFromToken();
+
+        keycloakService.changeFullName(String.valueOf(userId), request.getFirstName(), request.getLastName());
+
+        User user = repository.findById(userId).get();
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setMiddleName(request.getMiddleName());
+        repository.save(user);
+        return mapper.toChangeFullNameResponse(user);
     }
 
     @Override

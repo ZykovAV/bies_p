@@ -14,4 +14,6 @@ public interface KeycloakService {
     AccessTokenResponse getToken(String username, String password);
 
     UserRepresentation getUserById(String userId);
+
+    void changeFullName(String userId, String firstName, String lastName);
 }
