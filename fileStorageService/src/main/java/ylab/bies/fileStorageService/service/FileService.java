@@ -16,4 +16,6 @@ public interface FileService {
   Optional<FileModel> getByFileId(UUID fileId);
 
   void removeFile(UUID fileId);
+
+  FileModel getFileWithBodyById(UUID fileId);
 }

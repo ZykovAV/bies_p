@@ -83,6 +83,7 @@ public class FileServiceImpl implements FileService {
    * If no files with this id were found in the database, then {@link RequestedFileNotFoundException} is thrown. </b>
    * If a file with this id is found in the db, but not found in s3 file storage - then no exceptions will
    * be thrown, and the item with this id will be removed from db quietly, so that db and s3 are consistent.
+   *
    * @param fileId - uuid of file to be removed
    */
   @Transactional(rollbackFor = Exception.class)
@@ -107,6 +108,24 @@ public class FileServiceImpl implements FileService {
       throw new OperationFailedException("Failed to remove file");
     }
     log.info("File with {} was removed (or didn't exist) from S3", key);
+  }
+
+  @Transactional(readOnly = true)
+  @Override
+  public FileModel getFileWithBodyById(UUID fileId) {
+    FileModel fileModel = fileRepository.findById(fileId)
+            .orElseThrow(RequestedFileNotFoundException::new);
+    String key = getObjectKey(fileModel.getIdeaId(), fileModel.getId());
+    log.info("Download for {} ({} bytes) is starting", key, fileModel.getFileSize());
+
+    try {
+      fileModel.setBody(s3Service.getObject(s3Config.getIdeaFilesBucket(), key, fileModel.getFileSize()));
+      log.info("Download for {} ({} bytes) has finished", key, fileModel.getBody().length);
+      return fileModel;
+    } catch (Exception e) {
+      log.error("Failed to download file {} from S3", key, e);
+      throw new OperationFailedException("Failed to download file");
+    }
   }
 
 }

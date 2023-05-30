@@ -39,6 +39,9 @@ public class FileModel {
   @Column(name = "file_size")
   private Long fileSize;
 
+  @Transient
+  private byte[] body;
+
   public FileModel(Long ideaId, MultipartFile file) {
     this.ideaId = ideaId;
     this.contentType = file.getContentType();
