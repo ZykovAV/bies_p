@@ -1,9 +1,11 @@
 package ylab.bies.userservice.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-public class UserRegistrationException extends ApplicationException {
+@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+public class UserRegistrationException extends RuntimeException {
     public UserRegistrationException(String message) {
-        super(HttpStatus.INTERNAL_SERVER_ERROR, message);
+        super(message);
     }
 }

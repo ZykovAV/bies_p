@@ -2,10 +2,7 @@ package ylab.bies.userservice.controller;
 
 import lombok.experimental.UtilityClass;
 import org.keycloak.representations.AccessTokenResponse;
-import ylab.bies.userservice.dto.LoginRequest;
-import ylab.bies.userservice.dto.RegisterRequest;
-import ylab.bies.userservice.dto.RoleResponse;
-import ylab.bies.userservice.dto.UserResponse;
+import ylab.bies.userservice.dto.*;
 
 import java.util.Collections;
 import java.util.Set;
@@ -25,17 +22,6 @@ public class UserTestUtil {
         return request;
     }
 
-    public RegisterRequest getInvalidRegisterRequest() {
-        RegisterRequest request = new RegisterRequest();
-        request.setUsername("sa");
-        request.setEmail("invalidEmail");
-        request.setPassword("sa");
-        request.setFirstName("testFirstName");
-        request.setLastName("testLastName");
-        request.setMiddleName("testMiddleName");
-        return request;
-    }
-
     public static LoginRequest getValidLoginRequest() {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setUsername("username");
@@ -43,13 +29,13 @@ public class UserTestUtil {
         return loginRequest;
     }
 
-    public static LoginRequest getInvalidLoginRequest() {
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername("");
-        loginRequest.setPassword("password");
-        return loginRequest;
+    public static ChangeFullNameRequest getValidChangeFullNameRequest() {
+        ChangeFullNameRequest changeFullNameRequest = new ChangeFullNameRequest();
+        changeFullNameRequest.setFirstName("firstName");
+        changeFullNameRequest.setLastName("lastName");
+        changeFullNameRequest.setMiddleName("middleName");
+        return changeFullNameRequest;
     }
-
 
     public static AccessTokenResponse getAccessTokenResponse() {
         AccessTokenResponse tokenResponse = new AccessTokenResponse();
@@ -69,6 +55,12 @@ public class UserTestUtil {
                 && response.getLastName().equals(request.getLastName())
                 && response.getMiddleName().equals(request.getMiddleName())
                 && response.getRoles().equals(getDefaultRoleResponeSet());
+    }
+
+    public static boolean isChangeFullNameResponseValid(ChangeFullNameRequest request, ChangeFullNameResponse response) {
+        return response.getFirstName().equals(request.getFirstName())
+                && response.getLastName().equals(request.getLastName())
+                && response.getMiddleName().equals(request.getMiddleName());
     }
 
     private Set<RoleResponse> getDefaultRoleResponeSet() {

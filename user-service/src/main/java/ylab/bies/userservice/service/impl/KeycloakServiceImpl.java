@@ -51,4 +51,24 @@ public class KeycloakServiceImpl implements KeycloakService {
             return keycloak.tokenManager().getAccessToken();
         }
     }
+
+    @Override
+    public UserRepresentation getUserById(String userId) {
+        return realmResource.users().get(userId).toRepresentation();
+    }
+
+    @Override
+    public void changeFullName(String userId, String firstName, String lastName) {
+        UserRepresentation user = getUserById(userId);
+
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+
+        realmResource.users().get(userId).update(user);
+    }
+
+    @Override
+    public void changePassword(String userId, String newPassword) {
+        throw new UnsupportedOperationException();
+    }
 }

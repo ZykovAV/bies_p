@@ -32,10 +32,10 @@ public class UserAuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AccessTokenResponse> register(@RequestBody @Valid LoginRequest request) {
-        log.info("Logining a user: {}", request);
+    public ResponseEntity<AccessTokenResponse> login(@RequestBody @Valid LoginRequest request) {
+        log.info("Logining a user: \"{}\"", request.getUsername());
         AccessTokenResponse tokenResponse = service.login(request);
-        log.info("User: {} logged successfully", request);
+        log.info("User: \"{}\" logged successfully", request.getUsername());
         return ResponseEntity.status(HttpStatus.OK).body(tokenResponse);
     }
 }

@@ -7,7 +7,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,10 @@ import org.springframework.web.bind.annotation.*;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
 import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
-import ylab.bies.ideaservice.entity.Idea;
 import ylab.bies.ideaservice.service.IdeaService;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 
 
 @RestController
@@ -42,6 +43,7 @@ public class IdeaController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+
     @GetMapping(value = "/{id}")
     @Operation(summary = "Request for a info about idea")
     public ResponseEntity<IdeaResponseDto> getById(@RequestHeader("Authorization") String token,
@@ -55,4 +57,13 @@ public class IdeaController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+
+    @GetMapping
+    @Operation(summary = "Getting a list of ideas", description = "List of all users ideas")
+    public ResponseEntity<Page<IdeaResponseDto>> getAllIdeas(@RequestHeader("Authorization") String token,
+                                                             @NotNull final Pageable pageable) {
+        Page<IdeaResponseDto> ideas = ideaService.getAllIdeas(pageable);
+        log.info(String.format("Ideas %s received successfully", ideas));
+        return new ResponseEntity<>(ideas, HttpStatus.OK);
+    }
 }
