@@ -29,6 +29,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class UserServiceImpl implements UserService {
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid login or password";
+    private static final String USER_ALREADY_EXISTS_MESSAGE = "User with that username or email is already exists";
+    private static final String FAILED_TO_LOGIN_MESSAGE = "Failed to login a user";
+    private static final String FAILED_TO_REGISTER_MESSAGE = "Failed to register a new User";
     private final ApplicationConfiguration configuration;
     private final UserRepository repository;
     private final RoleRepository roleRepository;
@@ -59,12 +63,13 @@ public class UserServiceImpl implements UserService {
         try {
             return keycloakService.getToken(request.getUsername(), request.getPassword());
         } catch (NotAuthorizedException e) {
-            log.info("Failed to login a user. Invalid login or password");
-            throw new InvalidCredentialsException("Invalid login or password");
+            log.info("{}. {}", FAILED_TO_LOGIN_MESSAGE, INVALID_CREDENTIALS_MESSAGE);
+            throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
         }
     }
 
     @Override
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public UserResponse getProfile() {
         UUID userId = tokenManager.getUserIdFromToken();
 
@@ -75,23 +80,34 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ChangeNameResponse changeName(ChangeNameRequest request) {
-        return null;
+    @Transactional
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    public ChangeFullNameResponse changeFullName(ChangeFullNameRequest request) {
+        UUID userId = tokenManager.getUserIdFromToken();
+
+        keycloakService.changeFullName(String.valueOf(userId), request.getFirstName(), request.getLastName());
+
+        User user = repository.findById(userId).get();
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setMiddleName(request.getMiddleName());
+        repository.save(user);
+        return mapper.toChangeFullNameResponse(user);
     }
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-
+        throw new UnsupportedOperationException();
     }
 
     private void handleRegistrationResponse(Response response) {
         if (response.getStatusInfo() == Response.Status.CONFLICT) {
-            log.info("Failed to register a new User. User with that username or email is already exists");
-            throw new UserAlreadyExistException("User with that username or email is already exists");
+            log.info("{}. {}", FAILED_TO_REGISTER_MESSAGE, USER_ALREADY_EXISTS_MESSAGE);
+            throw new UserAlreadyExistException(USER_ALREADY_EXISTS_MESSAGE);
         }
         if (response.getStatusInfo() != Response.Status.CREATED) {
-            log.info("Failed to register a new User.");
-            throw new UserRegistrationException("Failed to register a new user");
+            log.info(FAILED_TO_REGISTER_MESSAGE);
+            throw new UserRegistrationException(FAILED_TO_REGISTER_MESSAGE);
         }
     }
 

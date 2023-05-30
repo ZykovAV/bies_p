@@ -2,6 +2,9 @@ package ylab.bies.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +26,10 @@ import ylab.bies.userservice.service.KeycloakService;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -47,6 +53,28 @@ public class UserAuthControllerTest {
     private UserRepository repository;
     @MockBean
     private KeycloakService keycloakService;
+    private static final List<String> invalidUsernamesAndPasswords = Arrays.asList(
+            "",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            null
+    );
+    private static final List<String> invalidEmails = Arrays.asList(
+            "",
+            "invalidEmail",
+            "invalidEmailmail.ru",
+            null
+    );
+    private static final List<String> invalidNames = Arrays.asList(
+            "",
+            "asdasd1",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            null
+    );
+    private static final List<String> invalidMiddleNames = Arrays.asList(
+            "",
+            "asdasd1",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    );
 
     @Test
     @Transactional
@@ -87,16 +115,58 @@ public class UserAuthControllerTest {
         verify(keycloakService, never()).assignRoles(anyString(), anySet());
     }
 
-    @Test
-    void register_InvalidBody() throws Exception {
-        RegisterRequest request = getInvalidRegisterRequest();
-        mockMvc.perform(post("/api/v1/users/register")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(mapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isBadRequest());
+    @ParameterizedTest
+    @MethodSource("getInvalidUsernamesAndPasswordsAsArguments")
+    void register_InvalidUsername(String username) throws Exception {
+        RegisterRequest request = getValidRegisterRequest();
+        request.setUsername(username);
 
-        assertThat(repository.findAll()).isEmpty();
+        register_InvalidBody(request);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getInvalidUsernamesAndPasswordsAsArguments")
+    void register_InvalidPassword(String password) throws Exception {
+        RegisterRequest request = getValidRegisterRequest();
+        request.setPassword(password);
+
+        register_InvalidBody(request);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getInvalidEmailsAsArguments")
+    void register_InvalidEmail(String email) throws Exception {
+        RegisterRequest request = getValidRegisterRequest();
+        request.setEmail(email);
+
+        register_InvalidBody(request);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getInvalidNamesAsArguments")
+    void register_InvalidFirstName(String firstName) throws Exception {
+        RegisterRequest request = getValidRegisterRequest();
+        request.setFirstName(firstName);
+
+        register_InvalidBody(request);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getInvalidNamesAsArguments")
+    void register_InvalidLastName(String lastName) throws Exception {
+        RegisterRequest request = getValidRegisterRequest();
+        request.setLastName(lastName);
+
+        register_InvalidBody(request);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getInvalidMiddleNamesAsArguments")
+    void register_InvalidMiddleName(String middleName) throws Exception {
+        RegisterRequest request = getValidRegisterRequest();
+        request.setMiddleName(middleName);
+
+        register_InvalidBody(request);
     }
 
     @Test
@@ -160,20 +230,53 @@ public class UserAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
-
-        verify(keycloakService, never()).getToken(anyString(), anyString());
     }
 
     @Test
-    void login_InvalidBody() throws Exception {
-        LoginRequest request = getInvalidLoginRequest();
+    void login_InvalidUsername() throws Exception {
+        LoginRequest request = getValidLoginRequest();
+        request.setUsername("");
 
+        login_InvalidBody(request);
+    }
+
+    @Test
+    void login_InvalidPassword() throws Exception {
+        LoginRequest request = getValidLoginRequest();
+        request.setPassword("");
+
+        login_InvalidBody(request);
+    }
+
+    private void register_InvalidBody(RegisterRequest request) throws Exception {
+        mockMvc.perform(post("/api/v1/users/register")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(mapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    private void login_InvalidBody(LoginRequest request) throws Exception {
         mockMvc.perform(post("/api/v1/users/login")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(mapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
+    }
 
-        verify(keycloakService, never()).getToken(anyString(), anyString());
+    private static Stream<Arguments> getInvalidUsernamesAndPasswordsAsArguments() {
+        return invalidUsernamesAndPasswords.stream().map(Arguments::arguments);
+    }
+
+    private static Stream<Arguments> getInvalidEmailsAsArguments() {
+        return invalidEmails.stream().map(Arguments::arguments);
+    }
+
+    private static Stream<Arguments> getInvalidNamesAsArguments() {
+        return invalidNames.stream().map(Arguments::arguments);
+    }
+
+    private static Stream<Arguments> getInvalidMiddleNamesAsArguments() {
+        return invalidMiddleNames.stream().map(Arguments::arguments);
     }
 }

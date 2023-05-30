@@ -3,6 +3,7 @@ package ylab.bies.userservice.mapper;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import ylab.bies.userservice.dto.ChangeFullNameResponse;
 import ylab.bies.userservice.dto.RegisterRequest;
 import ylab.bies.userservice.dto.UserResponse;
 import ylab.bies.userservice.entity.User;
@@ -22,4 +23,6 @@ public interface UserMapper {
     @Mapping(target = "enabled", constant = "true")
     @Mapping(target = "emailVerified", constant = "true")
     UserRepresentation toUserRepresentation(RegisterRequest request);
+
+    ChangeFullNameResponse toChangeFullNameResponse(User user);
 }

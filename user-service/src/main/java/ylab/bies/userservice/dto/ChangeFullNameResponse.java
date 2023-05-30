@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ChangeNameResponse {
+public class ChangeFullNameResponse {
     private String firstName;
     private String lastName;
     private String middleName;
