@@ -9,7 +9,12 @@ import ylab.bies.userservice.entity.User;
 
 @Mapper(componentModel = "spring", uses = CredentialRepresentationMapper.class)
 public interface UserMapper {
-    UserResponse toUserResponse(User user);
+    @Mapping(source = "user.id", target = "id")
+    @Mapping(source = "keycloakUser.username", target = "username")
+    @Mapping(source = "user.email", target = "email")
+    @Mapping(source = "user.firstName", target = "firstName")
+    @Mapping(source = "user.lastName", target = "lastName")
+    UserResponse toUserResponse(User user, UserRepresentation keycloakUser);
 
     User toUser(RegisterRequest request);
 

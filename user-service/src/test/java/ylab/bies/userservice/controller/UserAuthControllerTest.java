@@ -13,8 +13,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.userservice.dto.LoginRequest;
 import ylab.bies.userservice.dto.RegisterRequest;
@@ -34,7 +32,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static ylab.bies.userservice.controller.UserTestUtil.*;
 
 @SpringBootTest
@@ -50,9 +47,6 @@ public class UserAuthControllerTest {
     private UserRepository repository;
     @MockBean
     private KeycloakService keycloakService;
-    @Container
-    PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:15.2");
-
 
     @Test
     @Transactional
@@ -117,8 +111,7 @@ public class UserAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(mapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isConflict())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
+                .andExpect(status().isConflict());
 
         assertThat(repository.findAll()).isEmpty();
     }
@@ -156,8 +149,7 @@ public class UserAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(mapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
+                .andExpect(status().isUnprocessableEntity());
 
         verify(keycloakService, times(1)).getToken(request.getUsername(), request.getPassword());
     }
@@ -185,4 +177,3 @@ public class UserAuthControllerTest {
         verify(keycloakService, never()).getToken(anyString(), anyString());
     }
 }
-

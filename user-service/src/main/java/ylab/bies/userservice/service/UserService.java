@@ -8,7 +8,7 @@ public interface UserService {
 
     AccessTokenResponse login(LoginRequest request);
 
-    UserResponse getProfile(String token);
+    UserResponse getProfile();
 
     ChangeNameResponse changeName(ChangeNameRequest request);
 

@@ -1,9 +1,11 @@
 package ylab.bies.userservice.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-public class InvalidCredentialsException extends ApplicationException {
+@ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+public class InvalidCredentialsException extends RuntimeException {
     public InvalidCredentialsException(String message) {
-        super(HttpStatus.UNPROCESSABLE_ENTITY, message);
+        super(message);
     }
 }
