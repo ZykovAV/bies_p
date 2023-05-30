@@ -7,6 +7,7 @@ import java.util.UUID;
 
 @Setter
 @Getter
+@AllArgsConstructor
 public class IdeaResponseDto {
 
     private Long id;
