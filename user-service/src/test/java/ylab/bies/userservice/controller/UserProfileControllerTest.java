@@ -16,12 +16,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import ylab.bies.userservice.dto.ChangeFullNameRequest;
-import ylab.bies.userservice.dto.ChangeFullNameResponse;
-import ylab.bies.userservice.dto.RegisterRequest;
-import ylab.bies.userservice.dto.UserResponse;
+import ylab.bies.userservice.dto.*;
 import ylab.bies.userservice.service.KeycloakService;
 
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Arrays;
@@ -59,6 +57,11 @@ public class UserProfileControllerTest {
             "",
             "asdasd1",
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    );
+    private static final List<String> invalidPasswords = Arrays.asList(
+            "",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            null
     );
 
     @Test
@@ -183,6 +186,89 @@ public class UserProfileControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void changePassword_Successfully() throws Exception {
+        UUID userId = UUID.randomUUID();
+        ChangePasswordRequest request = getValidChangePasswordRequest();
+
+        doNothing().when(keycloakService).changePassword(
+                String.valueOf(userId),
+                request.getOldPassword(),
+                request.getNewPassword()
+        );
+
+        mockMvc.perform(put("/api/v1/users/profile/password")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(userId))))
+                        .content(mapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isNoContent());
+
+        verify(keycloakService, times(1)).changePassword(
+                String.valueOf(userId),
+                request.getOldPassword(),
+                request.getNewPassword()
+        );
+    }
+
+    @Test
+    void changePassword_EmptyBody() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        mockMvc.perform(put("/api/v1/users/profile/password")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(userId))))
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getInvalidPasswordsAsArguments")
+    void changePassword_InvalidNewPassword(String password) throws Exception {
+        UUID userId = UUID.randomUUID();
+        ChangePasswordRequest request = getValidChangePasswordRequest();
+        request.setNewPassword(password);
+
+        mockMvc.perform(put("/api/v1/users/profile/password")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(userId))))
+                        .content(mapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void changePassword_InvalidOldPassword() throws Exception {
+        UUID userId = UUID.randomUUID();
+        ChangePasswordRequest request = getValidChangePasswordRequest();
+
+        doThrow(NotAuthorizedException.class).when(keycloakService).changePassword(
+                String.valueOf(userId),
+                request.getOldPassword(),
+                request.getNewPassword()
+        );
+
+        mockMvc.perform(put("/api/v1/users/profile/password")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(userId))))
+                        .content(mapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isUnprocessableEntity());
+
+        verify(keycloakService, times(1)).changePassword(
+                String.valueOf(userId),
+                request.getOldPassword(),
+                request.getNewPassword()
+        );
+    }
+
     private void registerUser(UUID userId, RegisterRequest request) throws Exception {
         when(keycloakService.register(any(UserRepresentation.class))).thenReturn(
                 Response.created(URI.create("/" + userId)).build()
@@ -215,5 +301,9 @@ public class UserProfileControllerTest {
 
     private static Stream<Arguments> getInvalidMiddleNamesAsArguments() {
         return invalidMiddleNames.stream().map(Arguments::arguments);
+    }
+
+    private static Stream<Arguments> getInvalidPasswordsAsArguments() {
+        return invalidPasswords.stream().map(Arguments::arguments);
     }
 }

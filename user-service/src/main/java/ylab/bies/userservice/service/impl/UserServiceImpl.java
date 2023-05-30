@@ -12,6 +12,7 @@ import ylab.bies.userservice.dto.*;
 import ylab.bies.userservice.entity.Role;
 import ylab.bies.userservice.entity.User;
 import ylab.bies.userservice.exception.InvalidCredentialsException;
+import ylab.bies.userservice.exception.InvalidOldPasswordException;
 import ylab.bies.userservice.exception.UserAlreadyExistException;
 import ylab.bies.userservice.exception.UserRegistrationException;
 import ylab.bies.userservice.mapper.UserMapper;
@@ -31,8 +32,10 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
     private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid login or password";
     private static final String USER_ALREADY_EXISTS_MESSAGE = "User with that username or email is already exists";
+    private static final String INVALID_OLD_PASSWORD_MESSAGE = "Invalid old password";
     private static final String FAILED_TO_LOGIN_MESSAGE = "Failed to login a user";
     private static final String FAILED_TO_REGISTER_MESSAGE = "Failed to register a new User";
+    private static final String FAILED_CHANGE_PASSWORD_MESSAGE = "Failed to change password";
     private final ApplicationConfiguration configuration;
     private final UserRepository repository;
     private final RoleRepository roleRepository;
@@ -97,7 +100,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-        throw new UnsupportedOperationException();
+        UUID userId = tokenManager.getUserIdFromToken();
+        try {
+            keycloakService.changePassword(String.valueOf(userId), request.getOldPassword(), request.getNewPassword());
+        } catch (NotAuthorizedException e) {
+            log.info("{}. {}", FAILED_CHANGE_PASSWORD_MESSAGE, INVALID_OLD_PASSWORD_MESSAGE);
+            throw new InvalidOldPasswordException(INVALID_OLD_PASSWORD_MESSAGE);
+        }
     }
 
     private void handleRegistrationResponse(Response response) {

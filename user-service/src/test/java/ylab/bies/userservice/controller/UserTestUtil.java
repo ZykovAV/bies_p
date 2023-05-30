@@ -47,6 +47,13 @@ public class UserTestUtil {
         return tokenResponse;
     }
 
+    public static ChangePasswordRequest getValidChangePasswordRequest() {
+        ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest();
+        changePasswordRequest.setOldPassword("password");
+        changePasswordRequest.setNewPassword("password");
+        return changePasswordRequest;
+    }
+
     public static boolean isUserResponseValid(RegisterRequest request, UserResponse response, UUID userId) {
         return response.getId().equals(userId)
                 && response.getUsername().equals(request.getUsername())
