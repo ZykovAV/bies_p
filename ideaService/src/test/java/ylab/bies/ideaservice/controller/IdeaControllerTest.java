@@ -1,22 +1,20 @@
 package ylab.bies.ideaservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
@@ -29,24 +27,20 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @Testcontainers
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
 public class IdeaControllerTest {
 
-    @Container
     public static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:15.2");
-
-    static {
-        postgreSQLContainer.start();
-    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -170,22 +164,102 @@ public class IdeaControllerTest {
     }
 
 
-//    @Test
-//    @DisplayName("Get an existing idea. Should be successful.")
-//    @SqlGroup({
-//            @Sql(value = "classpath:init/ideas-test-data.sql", executionPhase = BEFORE_TEST_METHOD)
-//    })
-//    public void getAnExistingIdeaById() throws Exception {
-//        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/1")
-//                        .header("Authorization", "test-token"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.id", is(1)))
-//                .andExpect(jsonPath("$.name", is("name-1")))
-//                .andExpect(jsonPath("$.text", is("text-1")));
-//    }
+    @Test
+    @DisplayName("ChangeStatus. Change DRAFT(1) to IMPOSSIBLE STATUS. Should return 304")
+    public void changeDraftToImpossibleStatus() throws Exception {
+        initTable();  // add test draft and then try to change status
+        for (int i : new int[]{-1,0,5}) {
+            mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=" + i)
+                            .header("Authorization", "test-token"))
+                    .andExpect(status().isNotModified());
+        }
+    }
 
     @Test
-    @DisplayName("Get an non-existent idea. Should return 404.")
+    @DisplayName("ChangeStatus. Change DRAFT(1) to ANY STATUS. Should return 304")
+    public void changeDraftToAnyStatus() throws Exception {
+        initTable();  // add test draft and then try to change status
+        for (int i = 1; i <= 4; i++) {
+            mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=" + i)
+                            .header("Authorization", "test-token"))
+                    .andExpect(status().isNotModified());
+        }
+    }
+
+    @Test
+    @DisplayName("ChangeStatus. Change UNDER_CONSIDERATION(2) to DRAFT(1) or SAME. Should return 304")
+    public void changeUnderConsiderationToAnyStatus() throws Exception {
+        initTable();  // add test draft and then try to change status
+        // todo изменить id идеи когда будет возможность публиковать черновики
+        for (int i = 1; i <= 2; i++) {
+            mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=" + i)
+                            .header("Authorization", "test-token"))
+                    .andExpect(status().isNotModified());
+        }
+    }
+
+    @Test
+    @DisplayName("ChangeStatus. Change UNDER_CONSIDERATION(2) to ACCEPTED(3). Should be ok")
+    public void changeUnderConsiderationToAccepted() throws Exception {
+        initTable();  // add test draft and then try to change status
+        // todo изменить id идеи когда будет возможность публиковать черновики
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=3")
+                        .header("Authorization", "test-token"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("ChangeStatus. Change UNDER_CONSIDERATION(2) to REJECTED(4). Should be ok")
+    public void changeUnderConsiderationToRejected() throws Exception {
+        initTable();  // add test draft and then try to change status
+        // todo изменить id идеи когда будет возможность публиковать черновики
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=4")
+                        .header("Authorization", "test-token"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("ChangeStatus. Change ACCEPTED(3) to ANY STATUS. Should return 304")
+    public void changeAcceptedToAnyStatus() throws Exception {
+        initTable();  // add test draft and then try to change status
+        // todo изменить id идеи когда будет возможность присваивать статус ACCEPTED(3)
+        for (int i = 1; i <= 4; i++) {
+            mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=" + i)
+                            .header("Authorization", "test-token"))
+                    .andExpect(status().isNotModified());
+        }
+    }
+
+    @Test
+    @DisplayName("ChangeStatus. Change REJECTED(4) to ANY STATUS. Should return 304")
+    public void changeRejectedToAnyStatus() throws Exception {
+        initTable();  // add test draft and then try to change status
+        // todo изменить id идеи когда будет возможность присваивать статус REJECTED(4)
+        for (int i = 1; i <= 4; i++) {
+            mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=" + i)
+                            .header("Authorization", "test-token"))
+                    .andExpect(status().isNotModified());
+        }
+    }
+
+    @Test
+    @DisplayName("Get by id. Get an existing idea. Should be successful.")
+    public void getAnExistingIdeaById() throws Exception {
+        initTable();  // add test draft and then get
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/1")
+                        .header("Authorization", "test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Draft Idea")))
+                .andExpect(jsonPath("$.text", is("Draft idea text")))
+                .andExpect(jsonPath("$.rating", is(nullValue())))
+                .andExpect(jsonPath("$.userId", is("a81bc81b-dead-4e5d-abff-90865d1e13b1")))
+                .andExpect(jsonPath("$.status", is(1)))
+                .andExpect(jsonPath("$.userLike", is(nullValue())));
+    }
+
+    @Test
+    @DisplayName("GetById. Get an non-existent idea. Should return 404.")
     public void getAnNotExistingIdeaById() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/100500")
                         .header("Authorization", "test-token"))
@@ -193,11 +267,32 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Get idea with not valid id. Should return 400.")
+    @DisplayName("GetById. Get idea with not valid id. Should return 400.")
     public void getIdeaByBadId() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/BAD_ID")
                         .header("Authorization", "test-token"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GetById. Get someone's else draft. Should return 403.")
+    public void getSomeonesElseDraft() throws Exception {
+        initTable();
+        // todo добавить чужие черновики как отключим получение одного и того же uuid из декодера
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/ideas/1")
+                        .header("Authorization", "test-token"))
+                .andExpect(status().isForbidden());
+    }
+
+
+    private void initTable() throws Exception {
+        IdeaDraftRequestDto request = new IdeaDraftRequestDto();
+        request.setName("Draft Idea");
+        request.setText("Draft idea text");
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/ideas/draft")
+                .header("Authorization", "test-token")
+                .content(objectMapper.writeValueAsString(request))
+                .contentType(MediaType.APPLICATION_JSON));
     }
 
 }
