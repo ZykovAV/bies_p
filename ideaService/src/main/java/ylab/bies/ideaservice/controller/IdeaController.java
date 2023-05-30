@@ -48,13 +48,15 @@ public class IdeaController {
     @Operation(summary = "Request for a info about idea")
     public ResponseEntity<IdeaResponseDto> getById(@RequestHeader("Authorization") String token,
                                                    @PathVariable Long id) {
-        IdeaResponseDto response = ideaService.findById(token, id);
-        if (response == null) {
-            log.info("Idea with id={} not found", id);
-            return ResponseEntity.notFound().build();
-        }
-        log.info("Response with idea: {}", response);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(ideaService.findById(token, id), HttpStatus.OK);
+    }
+
+
+    @PatchMapping("/{id}/status")
+    @Operation(summary = "Change status of idea")
+    public ResponseEntity<HttpStatus> changeStatus(@PathVariable Long id,
+                                                   @RequestParam Integer statusId) {
+        return ResponseEntity.ok(ideaService.changeStatus(id, statusId));
     }
 
 
