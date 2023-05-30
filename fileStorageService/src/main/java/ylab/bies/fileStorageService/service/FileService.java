@@ -14,4 +14,6 @@ public interface FileService {
   FileListByIdeaDto getFileListByIdeaId(Long ideaId);
 
   Optional<FileModel> getByFileId(UUID fileId);
+
+  void removeFile(UUID fileId);
 }

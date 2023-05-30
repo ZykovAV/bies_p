@@ -1,8 +1,6 @@
 package ylab.bies.fileStorageService.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ylab.bies.fileStorageService.dto.FileListByIdeaDto;
-import ylab.bies.fileStorageService.exception.ErrorResponse;
 import ylab.bies.fileStorageService.service.FileService;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "api/v1/files")
@@ -31,10 +30,7 @@ public class FileController {
                           description = "OK"),
                   @ApiResponse(
                           responseCode = "500",
-                          description = "Internal server error",
-                          content = @Content(
-                                  mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                  schema = @Schema(implementation = ErrorResponse.class)))
+                          description = "Internal server error")
           }
   )
   @GetMapping("/by-idea/{idea_id}")
@@ -51,22 +47,13 @@ public class FileController {
                           description = "File successfully saved"),
                   @ApiResponse(
                           responseCode = "400",
-                          description = "Data format is incorrect. Idea id and file name must not be empty.",
-                          content = @Content(
-                                  mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                  schema = @Schema(implementation = ErrorResponse.class))),
+                          description = "Data format is incorrect. Idea id and file name must not be empty."),
                   @ApiResponse(
                           responseCode = "403",
-                          description = "User is not authorized for editing idea with id specified",
-                          content = @Content(
-                                  mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                  schema = @Schema(implementation = ErrorResponse.class))),
+                          description = "User is not authorized for editing idea with id specified"),
                   @ApiResponse(
                           responseCode = "500",
-                          description = "Internal server error",
-                          content = @Content(
-                                  mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                  schema = @Schema(implementation = ErrorResponse.class))),
+                          description = "Internal server error")
           }
   )
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -77,6 +64,12 @@ public class FileController {
     String dummyToken = "test";
     fileService.addFile(ideaId, file, dummyToken);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @DeleteMapping("/{file_id}")
+  public ResponseEntity<Void> removeFile(@PathVariable("file_id") UUID fileId) {
+    fileService.removeFile(fileId);
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
 }
