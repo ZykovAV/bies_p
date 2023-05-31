@@ -101,12 +101,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public void changePassword(ChangePasswordRequest request) {
         UUID userId = tokenManager.getUserIdFromToken();
+        String username = tokenManager.getUsernameFromToken();
         try {
-            keycloakService.changePassword(String.valueOf(userId), request.getOldPassword(), request.getNewPassword());
+            keycloakService.getToken(username, request.getOldPassword());
         } catch (NotAuthorizedException e) {
             log.info("{}. {}", FAILED_CHANGE_PASSWORD_MESSAGE, INVALID_OLD_PASSWORD_MESSAGE);
             throw new InvalidOldPasswordException(INVALID_OLD_PASSWORD_MESSAGE);
         }
+        keycloakService.changePassword(String.valueOf(userId), request.getNewPassword());
     }
 
     private void handleRegistrationResponse(Response response) {

@@ -71,14 +71,8 @@ public class KeycloakServiceImpl implements KeycloakService {
     }
 
     @Override
-    public void changePassword(String userId, String oldPassword, String newPassword) {
-        UserRepresentation user = realmResource.users().get(userId).toRepresentation();
-
-        //If the method did not throw an exception, then the old password is correct
-        getToken(user.getUsername(), oldPassword);
-
+    public void changePassword(String userId, String newPassword) {
         CredentialRepresentation credentials = credentialMapper.toCredentialRepresentation(newPassword).get(0);
-
         realmResource.users().get(userId).resetPassword(credentials);
     }
 }

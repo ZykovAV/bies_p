@@ -17,5 +17,5 @@ public interface KeycloakService {
 
     void changeFullName(String userId, String firstName, String lastName);
 
-    void changePassword(String userId, String oldPassword, String newPassword);
+    void changePassword(String userId, String newPassword);
 }
