@@ -14,4 +14,5 @@ public interface UserService {
 
     void changePassword(ChangePasswordRequest request);
 
+    ContactsResponse getContactsById(String id);
 }

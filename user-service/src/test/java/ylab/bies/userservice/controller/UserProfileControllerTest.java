@@ -1,6 +1,8 @@
 package ylab.bies.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -11,10 +13,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.userservice.dto.*;
 import ylab.bies.userservice.service.KeycloakService;
@@ -45,6 +47,8 @@ public class UserProfileControllerTest {
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper mapper;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     @MockBean
     private KeycloakService keycloakService;
     private static final String USER_ID_CLAIM = "sub";
@@ -66,32 +70,76 @@ public class UserProfileControllerTest {
             null
     );
 
-    @Test
-    @Transactional
-    void getProfile_Successfully() throws Exception {
-        UUID userId = UUID.randomUUID();
-        RegisterRequest request = getValidRegisterRequest();
+    @Nested
+    class RollbackTests {
+        @AfterEach
+        void setUp() {
+            jdbcTemplate.execute("TRUNCATE TABLE users CASCADE");
+        }
 
-        registerUser(userId, request);
+        @Test
+        void getProfile_Successfully() throws Exception {
+            UUID userId = UUID.randomUUID();
+            RegisterRequest request = getValidRegisterRequest();
 
-        UserRepresentation keycloakUser = new UserRepresentation();
-        keycloakUser.setUsername(request.getUsername());
-        when(keycloakService.getUserById(String.valueOf(userId))).thenReturn(keycloakUser);
+            registerUser(userId, request);
+
+            UserRepresentation keycloakUser = new UserRepresentation();
+            keycloakUser.setUsername(request.getUsername());
+            when(keycloakService.getUserById(String.valueOf(userId))).thenReturn(keycloakUser);
 
 
-        MvcResult result = mockMvc.perform(get("/api/v1/users/profile")
-                        .with(jwt()
-                                .jwt(jwt -> jwt.claim(USER_ID_CLAIM, String.valueOf(userId))))
-                )
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andReturn();
-        UserResponse response = mapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
+            MvcResult result = mockMvc.perform(get("/api/v1/users/profile")
+                            .with(jwt()
+                                    .jwt(jwt -> jwt.claim(USER_ID_CLAIM, String.valueOf(userId))))
+                    )
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                    .andReturn();
+            UserResponse response = mapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
 
-        assertThat(isUserResponseValid(request, response, userId)).isTrue();
+            assertThat(isUserResponseValid(request, response, userId)).isTrue();
 
-        verify(keycloakService, times(1)).getUserById(String.valueOf(userId));
+            verify(keycloakService, times(1)).getUserById(String.valueOf(userId));
+        }
+
+        @Test
+        void changeFullName_Successfully() throws Exception {
+            UUID userId = UUID.randomUUID();
+            RegisterRequest registerRequest = getValidRegisterRequest();
+            ChangeFullNameRequest request = getValidChangeFullNameRequest();
+            registerUser(userId, registerRequest);
+
+            doNothing().when(keycloakService).changeFullName(
+                    String.valueOf(userId),
+                    request.getFirstName(),
+                    request.getLastName()
+            );
+
+            MvcResult result = mockMvc.perform(put("/api/v1/users/profile/fullName")
+                            .content(mapper.writeValueAsString(request))
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .with(jwt()
+                                    .jwt(jwt -> jwt.claim(USER_ID_CLAIM, String.valueOf(userId))))
+                    )
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                    .andReturn();
+            ChangeFullNameResponse response = mapper.readValue(
+                    result.getResponse().getContentAsString(),
+                    ChangeFullNameResponse.class
+            );
+
+            assertThat(isChangeFullNameResponseValid(request, response)).isTrue();
+
+            verify(keycloakService, times(1)).changeFullName(
+                    String.valueOf(userId),
+                    request.getFirstName(),
+                    request.getLastName()
+            );
+        }
     }
 
     @Test
@@ -99,44 +147,6 @@ public class UserProfileControllerTest {
         mockMvc.perform(get("/api/v1/users/profile"))
                 .andDo(print())
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @Transactional
-    void changeFullName_Successfully() throws Exception {
-        UUID userId = UUID.randomUUID();
-        RegisterRequest registerRequest = getValidRegisterRequest();
-        ChangeFullNameRequest request = getValidChangeFullNameRequest();
-        registerUser(userId, registerRequest);
-
-        doNothing().when(keycloakService).changeFullName(
-                String.valueOf(userId),
-                request.getFirstName(),
-                request.getLastName()
-        );
-
-        MvcResult result = mockMvc.perform(put("/api/v1/users/profile/fullName")
-                        .content(mapper.writeValueAsString(request))
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .with(jwt()
-                                .jwt(jwt -> jwt.claim(USER_ID_CLAIM, String.valueOf(userId))))
-                )
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andReturn();
-        ChangeFullNameResponse response = mapper.readValue(
-                result.getResponse().getContentAsString(),
-                ChangeFullNameResponse.class
-        );
-
-        assertThat(isChangeFullNameResponseValid(request, response)).isTrue();
-
-        verify(keycloakService, times(1)).changeFullName(
-                String.valueOf(userId),
-                request.getFirstName(),
-                request.getLastName()
-        );
     }
 
     @Test
