@@ -14,7 +14,6 @@ import ylab.bies.fileStorageService.service.S3Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -62,12 +61,16 @@ public class MinioServiceImpl implements S3Service {
 
   @Override
   public byte[] getObject(String bucketName, String key, long size) throws Exception {
-    try (InputStream in = minioClient.getObject(GetObjectArgs.builder().bucket(bucketName).object(key).build());
+    try (InputStream in = minioClient.getObject(
+            GetObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(key)
+                    .build());
          ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
       int nRead;
       byte[] data = new byte[1024];
-      while ((nRead = in.read(data, 0, data.length)) != -1){
+      while ((nRead = in.read(data, 0, data.length)) != -1) {
         out.write(data, 0, nRead);
       }
       out.flush();
