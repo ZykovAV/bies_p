@@ -28,6 +28,7 @@ public class SecurityConfiguration {
                         .antMatchers(HttpMethod.PUT, "/api/v1/users/profile/fullName").authenticated()
                         .antMatchers(HttpMethod.PUT, "/api/v1/users/profile/password").authenticated()
                         .antMatchers(HttpMethod.GET, "/api/v1/users/{id}/contacts").hasRole("SERVICE")
+                        .antMatchers(HttpMethod.GET, "/api/v1/users/contacts").hasRole("SERVICE")
                         .anyRequest().denyAll())
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)

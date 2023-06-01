@@ -3,11 +3,10 @@ package ylab.bies.userservice.mapper;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import ylab.bies.userservice.dto.ChangeFullNameResponse;
-import ylab.bies.userservice.dto.ContactsResponse;
-import ylab.bies.userservice.dto.RegisterRequest;
-import ylab.bies.userservice.dto.UserResponse;
+import org.springframework.data.domain.Page;
+import ylab.bies.userservice.dto.*;
 import ylab.bies.userservice.entity.User;
+import ylab.bies.userservice.projection.UserProjection;
 
 @Mapper(componentModel = "spring", uses = CredentialRepresentationMapper.class)
 public interface UserMapper {
@@ -27,5 +26,9 @@ public interface UserMapper {
 
     ChangeFullNameResponse toChangeFullNameResponse(User user);
 
-    ContactsResponse toContactsResponse(User user);
+    ContactsResponse toContactsResponse(UserProjection user);
+
+    @Mapping(source = "number", target = "currentPage")
+    @Mapping(source = "content", target = "contacts")
+    ContactsPagination toContactsPagination(Page<UserProjection> userPage);
 }

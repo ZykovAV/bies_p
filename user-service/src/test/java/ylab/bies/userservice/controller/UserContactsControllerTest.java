@@ -16,14 +16,20 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ylab.bies.userservice.dto.ContactsPagination;
+import ylab.bies.userservice.dto.ContactsResponse;
 import ylab.bies.userservice.dto.RegisterRequest;
 import ylab.bies.userservice.service.KeycloakService;
 
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
@@ -70,6 +76,51 @@ public class UserContactsControllerTest {
                     .andExpect(jsonPath("$.email", equalTo(request.getEmail())))
                     .andExpect(jsonPath("$.firstName", equalTo(request.getFirstName())));
         }
+
+        @Test
+        void getAllUsersContactById_Successfully() throws Exception {
+            RegisterRequest request = getValidRegisterRequest();
+            int numberOfUsers = 30;
+            List<UUID> uuids = new ArrayList<>();
+
+            for (int i = 0; i < numberOfUsers; i++) {
+                UUID uuid = UUID.randomUUID();
+                uuids.add(uuid);
+                request.setEmail("test" + i + "@mail.ru");
+                registerUser(uuid, request);
+            }
+
+            List<ContactsResponse> contactsResponses = new ArrayList<>();
+            for (UUID uuid : uuids) {
+                MvcResult result = mockMvc.perform(get("/api/v1/users/{id}/contacts", uuid)
+                                .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                        )
+                        .andDo(print())
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                contactsResponses.add(mapper.readValue(
+                        result.getResponse().getContentAsString(),
+                        ContactsResponse.class
+                ));
+            }
+
+            MvcResult result = mockMvc.perform(get("/api/v1/users/contacts")
+                            .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                    )
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            ContactsPagination contactsPagination = mapper.readValue(
+                    result.getResponse().getContentAsString(),
+                    ContactsPagination.class
+            );
+            assertThat(contactsPagination.getContacts()).isEqualTo(contactsResponses);
+            assertThat(contactsPagination.getTotalElements()).isEqualTo(numberOfUsers);
+            assertThat(contactsPagination.getTotalPages()).isEqualTo(1);
+            assertThat(contactsPagination.getCurrentPage()).isEqualTo(0);
+        }
     }
 
     @Test
@@ -109,6 +160,22 @@ public class UserContactsControllerTest {
                 )
                 .andDo(print())
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getAllUsersContactById_Unauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/users/contacts"))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getAllUsersContactById_Forbidden_NotAService() throws Exception {
+        mockMvc.perform(get("/api/v1/users/contacts")
+                        .with(jwt())
+                )
+                .andDo(print())
+                .andExpect(status().isForbidden());
     }
 
     private void registerUser(UUID userId, RegisterRequest request) throws Exception {

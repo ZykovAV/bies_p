@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ylab.bies.userservice.config.ApplicationConfiguration;
@@ -13,6 +16,7 @@ import ylab.bies.userservice.entity.Role;
 import ylab.bies.userservice.entity.User;
 import ylab.bies.userservice.exception.*;
 import ylab.bies.userservice.mapper.UserMapper;
+import ylab.bies.userservice.projection.UserProjection;
 import ylab.bies.userservice.repository.RoleRepository;
 import ylab.bies.userservice.repository.UserRepository;
 import ylab.bies.userservice.service.KeycloakService;
@@ -35,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private static final String FAILED_TO_LOGIN_MESSAGE = "Failed to login a user";
     private static final String FAILED_TO_REGISTER_MESSAGE = "Failed to register a new User";
     private static final String FAILED_CHANGE_PASSWORD_MESSAGE = "Failed to change password";
+    private static final int USER_PAGE_SIZE = 1000;
     private final ApplicationConfiguration configuration;
     private final UserRepository repository;
     private final RoleRepository roleRepository;
@@ -116,11 +121,22 @@ public class UserServiceImpl implements UserService {
     public ContactsResponse getContactsById(String id) {
         try {
             UUID userId = UUID.fromString(id);
-            User user = repository.findById(userId).orElseThrow(() -> getUserNotFoundException(id));
+            UserProjection user = repository.findProjectedById(userId).orElseThrow(() -> getUserNotFoundException(id));
             return mapper.toContactsResponse(user);
         } catch (IllegalArgumentException e) {
             throw getUserNotFoundException(id);
         }
+    }
+
+    @Override
+    public ContactsPagination getAllContacts(int page) {
+        Page<UserProjection> userPage = repository.findAllProjectedBy(PageRequest.of(
+                page,
+                USER_PAGE_SIZE,
+                Sort.by("firstName").and(Sort.by("lastName"))
+        ));
+
+        return mapper.toContactsPagination(userPage);
     }
 
     private UserNotFoundException getUserNotFoundException(String id) {
