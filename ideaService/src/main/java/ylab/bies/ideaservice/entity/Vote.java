@@ -18,10 +18,11 @@ public class Vote {
     private VotePK pk;
     private Boolean isLike;
 
-    public Vote(Long ideaId, UUID userId) {
+    public Vote(UUID userId, Long ideaId, Boolean isLike) {
         pk = new VotePK();
-        pk.setIdeaId(ideaId);
         pk.setUserId(userId);
+        pk.setIdeaId(ideaId);
+        this.isLike = isLike;
     }
 
     public Vote() {

@@ -18,6 +18,8 @@ public interface IdeaService {
 
     HttpStatus changeStatus(Long id, Integer status);
 
+    HttpStatus rate(String token, Long id, boolean isLike);
+
     Page<IdeaResponseDto> getAllIdeas(Pageable pageable);
 
     IdeaResponseDto updateIdea(String token, Long id, IdeaRequestDto editRequest);

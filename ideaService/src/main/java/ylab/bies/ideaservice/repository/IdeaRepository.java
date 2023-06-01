@@ -10,15 +10,23 @@ import ylab.bies.ideaservice.entity.Idea;
 
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IdeaRepository extends JpaRepository<Idea, Long> {
     Optional<Idea> findById(Long id);
 
+    @Modifying
     @Query("UPDATE Idea i SET i.status=:status WHERE i.id=:id AND i.status=2")
     void changeStatus(Long id, Integer status);
 
     @Query("SELECT i.status FROM Idea i WHERE i.id=:id")
     Optional<Integer> getStatus(Long id);
+
+    @Query("UPDATE Idea i SET i.rating=:rating WHERE i.id=:id")
+    void updateRating(Long id, int rating);
+
+    @Query("SELECT i.userId FROM Idea i WHERE i.id=:id")
+    Optional<UUID> getAuthorId(Long id);
 
     Page<Idea> findAllByStatusNotOrderByRatingDesc(int i, Pageable pageable);
 

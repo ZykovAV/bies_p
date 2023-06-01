@@ -60,6 +60,19 @@ public class IdeaController {
         return ResponseEntity.ok(ideaService.changeStatus(id, statusId));
     }
 
+    @PatchMapping("/{id}/like")
+    @Operation(summary = "Like idea")
+    public ResponseEntity<HttpStatus> like(@RequestHeader("Authorization") String token,
+                                           @PathVariable Long id) {
+        return ResponseEntity.ok(ideaService.rate(token, id, true));
+    }
+
+    @PatchMapping("/{id}/dislike")
+    @Operation(summary = "Dislike idea")
+    public ResponseEntity<HttpStatus> dislike(@RequestHeader("Authorization") String token,
+                                              @PathVariable Long id) {
+        return ResponseEntity.ok(ideaService.rate(token, id, false));
+    }
 
     @GetMapping
     @Operation(summary = "Getting a list of ideas", description = "List of all users ideas")

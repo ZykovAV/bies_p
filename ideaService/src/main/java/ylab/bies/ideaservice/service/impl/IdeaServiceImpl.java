@@ -17,6 +17,7 @@ import ylab.bies.ideaservice.exception.AccessDeniedException;
 import ylab.bies.ideaservice.exception.IdeaNotFoundException;
 import ylab.bies.ideaservice.exception.InvalidStatusIdeaException;
 import ylab.bies.ideaservice.exception.StatusNotChangedException;
+import ylab.bies.ideaservice.exception.VoteRejectedException;
 import ylab.bies.ideaservice.mapper.IdeaMapper;
 import ylab.bies.ideaservice.repository.IdeaRepository;
 import ylab.bies.ideaservice.service.IdeaService;
@@ -83,6 +84,29 @@ public class IdeaServiceImpl implements IdeaService {
         log.info("Status of idea with id={} has been changed to {}", id, status);
         return HttpStatus.OK;
     }
+
+    @Override
+    @Transactional
+    public HttpStatus rate(String token, Long id, boolean isLike) {
+        UUID userId = decoder.getUuidFromToken(token);
+        UUID authorId = ideaRepository.getAuthorId(id).orElse(null);
+        if (authorId == null) {  // проверка существования такой идеи (идей без автора не существует)
+            log.info("There's no idea with id={}", id);
+            throw new IdeaNotFoundException("There's no idea with id=" + id);
+        } else if (authorId.equals(userId)) {  // если юзер оценивает свою идею
+            log.info("Attempt to rate own idea with id={} was rejected", id);
+            throw new VoteRejectedException("It is not allowed to rate your own idea");
+        }
+        voteService.rate(userId, id, isLike);
+        updateRating(id);  // пересчёт рейтинга
+        return HttpStatus.OK;
+    }
+
+
+    private void updateRating(Long id) {
+        ideaRepository.updateRating(id, voteService.getRating(id));
+    }
+
 
     @Transactional(readOnly = true)
     public Page<IdeaResponseDto> getAllIdeas(Pageable pageable) {
