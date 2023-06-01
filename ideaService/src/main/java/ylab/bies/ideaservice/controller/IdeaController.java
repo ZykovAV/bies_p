@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
+import ylab.bies.ideaservice.dto.request.IdeaRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
 import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 import ylab.bies.ideaservice.service.IdeaService;
@@ -67,5 +68,17 @@ public class IdeaController {
         Page<IdeaResponseDto> ideas = ideaService.getAllIdeas(pageable);
         log.info(String.format("Ideas %s received successfully", ideas));
         return new ResponseEntity<>(ideas, HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Saving or updating idea",
+            responses = {@ApiResponse(description = "Updated Idea",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = IdeaResponseDto.class)))})
+    public ResponseEntity<IdeaResponseDto> updateIdea(@RequestHeader("Authorization") String token,
+                                                      @Valid @RequestBody IdeaRequestDto editRequest, @PathVariable Long id) {
+        IdeaResponseDto updatedIdea = ideaService.updateIdea(token, id, editRequest);
+        log.info("Idea updated successfully");
+        return new ResponseEntity<>(updatedIdea, HttpStatus.OK);
     }
 }
