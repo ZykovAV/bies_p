@@ -73,6 +73,14 @@ public class UserContactsControllerTest {
     }
 
     @Test
+    void getUserContactById_Unauthorized() throws Exception {
+        UUID userId = UUID.randomUUID();
+        mockMvc.perform(get("/api/v1/users/{id}/contacts", userId))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void getUserContactById_Forbidden_NotAService() throws Exception {
         UUID userId = UUID.randomUUID();
         mockMvc.perform(get("/api/v1/users/{id}/contacts", userId)
