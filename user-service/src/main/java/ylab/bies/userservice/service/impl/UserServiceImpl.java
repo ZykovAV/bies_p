@@ -129,13 +129,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ContactsPagination getAllContacts(int page) {
         Page<UserProjection> userPage = repository.findAllProjectedBy(PageRequest.of(
                 page,
                 USER_PAGE_SIZE,
                 Sort.by("firstName").and(Sort.by("lastName"))
         ));
-
         return mapper.toContactsPagination(userPage);
     }
 
