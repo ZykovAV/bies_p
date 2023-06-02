@@ -17,4 +17,9 @@ public interface VoteRepository extends JpaRepository<Vote, VotePK> {
 
     @Query("SELECT COUNT(v) FROM Vote v WHERE v.pk.ideaId=:ideaId AND v.isLike=false")
     int getDislikesCount(Long ideaId);
+
+    Vote save(Vote vote);
+
+    @Query("UPDATE Vote v SET v.isLike=:isLike WHERE v.pk.ideaId=:ideaId AND v.pk.userId=:userId")
+    void changeVote(UUID userId, Long id, boolean isLike);
 }

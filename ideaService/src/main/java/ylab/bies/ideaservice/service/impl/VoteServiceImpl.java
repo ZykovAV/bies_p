@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ylab.bies.ideaservice.repository.VoteRepository;
 import ylab.bies.ideaservice.service.VoteService;
+import ylab.bies.ideaservice.entity.Vote;
 
 import java.util.UUID;
 
@@ -23,5 +24,15 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public Boolean getVoteOfUser(UUID userId, Long ideaId) {
         return voteRepository.getVoteOfUser(userId, ideaId);
+    }
+
+    @Override
+    public void rate(UUID userId, Long ideaId, boolean isLike) {
+        Boolean vote = voteRepository.getVoteOfUser(userId, ideaId);
+        if (vote == null) {
+            voteRepository.save(new Vote(userId, ideaId, isLike));
+        } else if (vote != isLike) {
+            voteRepository.changeVote(userId, ideaId, isLike);
+        }
     }
 }

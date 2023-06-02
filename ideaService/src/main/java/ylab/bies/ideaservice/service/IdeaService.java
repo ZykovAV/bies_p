@@ -16,7 +16,9 @@ public interface IdeaService {
 
     IdeaDraftResponseDto createDraftIdea(String token, IdeaDraftRequestDto request);
 
-    HttpStatus changeStatus(Long id, Integer status);
+    void changeStatus(Long id, Integer status);
+
+    void rate(String token, Long id, boolean isLike);
 
     Page<IdeaResponseDto> getAllIdeas(Pageable pageable);
 

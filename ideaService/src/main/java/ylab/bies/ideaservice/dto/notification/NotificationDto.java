@@ -16,7 +16,6 @@ public class NotificationDto {
 
     private LocalDateTime localDateTime;
     private String action;
-    private UUID actionUserId;
     private Long ideaId;
     private UUID ideaCreatorUserId;
 

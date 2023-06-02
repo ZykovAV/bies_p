@@ -17,6 +17,7 @@ import ylab.bies.ideaservice.exception.AccessDeniedException;
 import ylab.bies.ideaservice.exception.IdeaNotFoundException;
 import ylab.bies.ideaservice.exception.InvalidStatusIdeaException;
 import ylab.bies.ideaservice.exception.StatusNotChangedException;
+import ylab.bies.ideaservice.exception.VoteRejectedException;
 import ylab.bies.ideaservice.mapper.IdeaMapper;
 import ylab.bies.ideaservice.repository.IdeaRepository;
 import ylab.bies.ideaservice.service.IdeaService;
@@ -43,6 +44,8 @@ public class IdeaServiceImpl implements IdeaService {
     private final IdeaMapper ideaMapper;
     private final KafkaProducerService kafkaProducerService;
     public static final String PUBLISHED_IDEA = "Idea published";
+    public static final String ACCEPTED_IDEA = "Idea accepted";
+    public static final String REJECTED_IDEA = "Idea rejected";
 
 
     @Override
@@ -67,7 +70,7 @@ public class IdeaServiceImpl implements IdeaService {
 
     @Override
     @Transactional
-    public HttpStatus changeStatus(Long id, Integer status) {
+    public void changeStatus(Long id, Integer status) {
         if (status == null ||
                 (status != ACCEPTED.getValue() && status != Status.REJECTED.getValue())) {
             log.info("Status for idea id={} can be changed only to ACCEPTED(3) or REJECTED(4)", id);
@@ -80,9 +83,33 @@ public class IdeaServiceImpl implements IdeaService {
             throw new StatusNotChangedException("Change status for idea id=" + id + " is not allowed");
         }
         ideaRepository.changeStatus(id, status);
-        log.info("Status of idea with id={} has been changed to {}", id, status);
-        return HttpStatus.OK;
+        String newStatus = status.equals(ACCEPTED.getValue()) ? ACCEPTED_IDEA : REJECTED_IDEA;
+        NotificationDto notificationDto = createNotificationDto(newStatus, decoder.getUuidFromToken("test-token"), id);
+        kafkaProducerService.sendNotification(notificationDto);
+        log.info("Status of idea with id={} has been changed to '{}'", id, newStatus);
     }
+
+    @Override
+    @Transactional
+    public void rate(String token, Long id, boolean isLike) {
+        UUID userId = decoder.getUuidFromToken(token);
+        UUID authorId = ideaRepository.getAuthorId(id).orElse(null);
+        if (authorId == null) {  // проверка существования такой идеи (идей без автора не существует)
+            log.info("There's no idea with id={}", id);
+            throw new IdeaNotFoundException("There's no idea with id=" + id);
+        } else if (authorId.equals(userId)) {  // если юзер оценивает свою идею
+            log.info("Attempt to rate own idea with id={} was rejected", id);
+            throw new VoteRejectedException("It is not allowed to rate your own idea");
+        }
+        voteService.rate(userId, id, isLike);
+        updateRating(id);  // пересчёт рейтинга
+    }
+
+
+    private void updateRating(Long id) {
+        ideaRepository.updateRating(id, voteService.getRating(id));
+    }
+
 
     @Transactional(readOnly = true)
     public Page<IdeaResponseDto> getAllIdeas(Pageable pageable) {
@@ -140,6 +167,6 @@ public class IdeaServiceImpl implements IdeaService {
     private NotificationDto createNotificationDto(String action, UUID userId, Long ideaId) {
         LocalDateTime localDateTime = LocalDateTime.now();
 
-        return new NotificationDto(localDateTime, action, userId, ideaId, userId);
+        return new NotificationDto(localDateTime, action, ideaId, userId);
     }
 }
