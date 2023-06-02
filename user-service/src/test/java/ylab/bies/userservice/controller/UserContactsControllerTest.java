@@ -18,7 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import ylab.bies.userservice.dto.ContactsPagination;
+import ylab.bies.userservice.dto.ContactsPageResponse;
 import ylab.bies.userservice.dto.ContactsResponse;
 import ylab.bies.userservice.dto.RegisterRequest;
 import ylab.bies.userservice.service.KeycloakService;
@@ -80,46 +80,38 @@ public class UserContactsControllerTest {
         @Test
         void getAllUsersContactById_Successfully() throws Exception {
             RegisterRequest request = getValidRegisterRequest();
-            int numberOfUsers = 30;
-            List<UUID> uuids = new ArrayList<>();
-
+            int pageCount = 10;
+            int pageSize = 10;
+            int numberOfUsers = pageCount * pageSize;
+            List<ContactsResponse> contacts = new ArrayList<>();
             for (int i = 0; i < numberOfUsers; i++) {
-                UUID uuid = UUID.randomUUID();
-                uuids.add(uuid);
                 request.setEmail("test" + i + "@mail.ru");
-                registerUser(uuid, request);
-            }
+                registerUser(UUID.randomUUID(), request);
 
-            List<ContactsResponse> contactsResponses = new ArrayList<>();
-            for (UUID uuid : uuids) {
-                MvcResult result = mockMvc.perform(get("/api/v1/users/{id}/contacts", uuid)
+                ContactsResponse contactsResponse = new ContactsResponse();
+                contactsResponse.setFirstName(request.getFirstName());
+                contactsResponse.setEmail(request.getEmail());
+                contacts.add(contactsResponse);
+            }
+            for (int i = 0; i < pageCount; i++) {
+                String mvcRequest = String.format(
+                        "/api/v1/users/contacts?page=%s&size=%s&sort=firstName",
+                        i, pageSize
+                );
+                MvcResult result = mockMvc.perform(get(mvcRequest)
                                 .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
                         )
                         .andDo(print())
                         .andExpect(status().isOk())
                         .andReturn();
 
-                contactsResponses.add(mapper.readValue(
+                ContactsPageResponse pageResponse = mapper.readValue(
                         result.getResponse().getContentAsString(),
-                        ContactsResponse.class
-                ));
+                        ContactsPageResponse.class
+                );
+
+                assertThat(contacts).containsAll(pageResponse.getContacts());
             }
-
-            MvcResult result = mockMvc.perform(get("/api/v1/users/contacts")
-                            .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
-                    )
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andReturn();
-
-            ContactsPagination contactsPagination = mapper.readValue(
-                    result.getResponse().getContentAsString(),
-                    ContactsPagination.class
-            );
-            assertThat(contactsPagination.getContacts()).isEqualTo(contactsResponses);
-            assertThat(contactsPagination.getTotalElements()).isEqualTo(numberOfUsers);
-            assertThat(contactsPagination.getTotalPages()).isEqualTo(1);
-            assertThat(contactsPagination.getCurrentPage()).isEqualTo(0);
         }
     }
 

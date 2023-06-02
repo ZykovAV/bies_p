@@ -6,8 +6,8 @@ import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ylab.bies.userservice.config.ApplicationConfiguration;
@@ -39,7 +39,6 @@ public class UserServiceImpl implements UserService {
     private static final String FAILED_TO_LOGIN_MESSAGE = "Failed to login a user";
     private static final String FAILED_TO_REGISTER_MESSAGE = "Failed to register a new User";
     private static final String FAILED_CHANGE_PASSWORD_MESSAGE = "Failed to change password";
-    private static final int USER_PAGE_SIZE = 1000;
     private final ApplicationConfiguration configuration;
     private final UserRepository repository;
     private final RoleRepository roleRepository;
@@ -130,13 +129,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public ContactsPagination getAllContacts(int page) {
-        Page<UserProjection> userPage = repository.findAllProjectedBy(PageRequest.of(
-                page,
-                USER_PAGE_SIZE,
-                Sort.by("firstName").and(Sort.by("lastName"))
-        ));
-        return mapper.toContactsPagination(userPage);
+    public ContactsPageResponse getAllContacts(Pageable pageable) {
+        try {
+            Page<UserProjection> userPage = repository.findAllProjectedBy(pageable);
+            return mapper.toContactsPageResponse(userPage);
+        } catch (PropertyReferenceException e) {
+            throw new InvalidSortPropertyException(e.getMessage());
+        }
     }
 
     private UserNotFoundException getUserNotFoundException(String id) {

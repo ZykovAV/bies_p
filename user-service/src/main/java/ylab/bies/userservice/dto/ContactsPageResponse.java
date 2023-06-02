@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ContactsPagination {
+public class ContactsPageResponse {
     private List<ContactsResponse> contacts;
     private long totalElements;
     private int currentPage;

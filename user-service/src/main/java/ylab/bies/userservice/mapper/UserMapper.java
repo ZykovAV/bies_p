@@ -30,5 +30,5 @@ public interface UserMapper {
 
     @Mapping(source = "number", target = "currentPage")
     @Mapping(source = "content", target = "contacts")
-    ContactsPagination toContactsPagination(Page<UserProjection> userPage);
+    ContactsPageResponse toContactsPageResponse(Page<UserProjection> userPage);
 }
