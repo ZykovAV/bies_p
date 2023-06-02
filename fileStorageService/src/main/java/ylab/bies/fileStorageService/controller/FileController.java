@@ -44,7 +44,21 @@ public class FileController {
     return fileService.getFileListByIdeaId(ideaId);
   }
 
+  /**
+   * Sends to byte[] representation of the file requested.<br>
+   * The CONTENT_DISPOSITION response header contains: <br>
+   * 1) the "attachment" key word, indicating that the content can be downloaded.<br>
+   * 2) the encoded version of original file name with extension.<br>
+   * Browsers typically would download such files with the name and extension provided. <br>
+   * In case of the file name encoding failure, the CONTENT_DISPOSITION header <b>is not added</b> at all.
+   * But the rest of the response is the same (status, content type, body). Browsers typically would open such files
+   * inline if supported, or else download it using file id as a file name and trying to resolve content type into
+   * file extension.
+   * @param fileId - the uuid of the file
+   * @return byte[] representation of the file
+   */
   @GetMapping("/{file_id}")
+  @Operation(summary = "Get file by id as byte[]. File will be downloaded. Or opened in browser if file name/extension are failed to be encoded")
   public ResponseEntity<byte[]> getFileById(@PathVariable("file_id") UUID fileId) {
     FileModel fileModel = fileService.getFileWithBodyById(fileId);
 
