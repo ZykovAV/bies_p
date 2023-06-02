@@ -1,16 +1,17 @@
 package ylab.bies.fileStorageService.service.impl;
 
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ylab.bies.fileStorageService.config.S3Config;
 import ylab.bies.fileStorageService.service.S3Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
@@ -56,6 +57,26 @@ public class MinioServiceImpl implements S3Service {
             .object(key)
             .build();
     minioClient.removeObject(removeObjectArgs);
+  }
+
+  @Override
+  public byte[] getObject(String bucketName, String key, long size) throws Exception {
+    try (InputStream in = minioClient.getObject(
+            GetObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(key)
+                    .build());
+         ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+      int nRead;
+      byte[] data = new byte[1024];
+      while ((nRead = in.read(data, 0, data.length)) != -1) {
+        out.write(data, 0, nRead);
+      }
+      out.flush();
+
+      return out.toByteArray();
+    }
   }
 
 }

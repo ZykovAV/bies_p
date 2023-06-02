@@ -109,4 +109,22 @@ public class FileServiceImpl implements FileService {
     log.info("File with {} was removed (or didn't exist) from S3", key);
   }
 
+  @Transactional(readOnly = true)
+  @Override
+  public FileModel getFileWithBodyById(UUID fileId) {
+    FileModel fileModel = fileRepository.findById(fileId)
+            .orElseThrow(RequestedFileNotFoundException::new);
+    String key = getObjectKey(fileModel.getIdeaId(), fileModel.getId());
+    log.info("Download for {} ({} bytes) is starting", key, fileModel.getFileSize());
+
+    try {
+      fileModel.setBody(s3Service.getObject(s3Config.getIdeaFilesBucket(), key, fileModel.getFileSize()));
+      log.info("Download for {} ({} bytes) has finished", key, fileModel.getBody().length);
+      return fileModel;
+    } catch (Exception e) {
+      log.error("Failed to download file {} from S3", key, e);
+      throw new OperationFailedException("Failed to download file");
+    }
+  }
+
 }

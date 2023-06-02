@@ -9,13 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ylab.bies.fileStorageService.entity.FileModel;
+import ylab.bies.fileStorageService.exception.OperationFailedException;
 import ylab.bies.fileStorageService.service.FileService;
 import ylab.bies.fileStorageService.service.impl.IdeaServiceClientImpl;
 import ylab.bies.fileStorageService.service.impl.MinioServiceImpl;
@@ -23,13 +26,11 @@ import ylab.bies.fileStorageService.service.impl.MinioServiceImpl;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -50,14 +51,18 @@ class FileStorageServiceApplicationTests {
 
   private MockMultipartFile mockMultipartFile;
   private Long ideaId;
+  private byte[] data;
+  private String fileName;
 
   @BeforeEach
   void setup() throws Exception {
+    data = "Hello world".getBytes();
+    fileName = "hello.txt";
     mockMultipartFile = new MockMultipartFile(
             "file",
-            "hello.txt",
+            fileName,
             MediaType.TEXT_PLAIN_VALUE,
-            "Hello world".getBytes()
+            data
     );
     doNothing().when(minioService).putObject(anyString(), anyString(), any(MockMultipartFile.class));
     doNothing().when(minioService).removeObject(anyString(), anyString());
@@ -242,6 +247,61 @@ class FileStorageServiceApplicationTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
             .andExpect(jsonPath("$.files", hasSize(1)));
+  }
+
+  @Test
+  void shouldReturnFileAsByteArray() throws Exception {
+    ideaId = 222L;
+    when(minioService.getObject(anyString(), anyString(), anyLong())).thenReturn(data);
+
+    //post file to be downloaded
+    mockMvc.perform(MockMvcRequestBuilders
+                    .multipart(HttpMethod.POST, url)
+                    .file(mockMultipartFile)
+                    .param("idea_id", ideaId.toString()))
+            .andExpect(status().isCreated());
+
+    UUID fileUUID = getUUIDWithArgumentCaptor();
+    //download file
+    MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/" + fileUUID))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\""))
+            .andReturn();
+    assertArrayEquals(data, result.getResponse().getContentAsByteArray());
+  }
+
+  @Test
+  void shouldReturnStatus404WhenGetWithWrongFileId() throws Exception {
+    ideaId = 221L;
+    when(minioService.getObject(anyString(), anyString(), anyLong())).thenReturn(data);
+
+    UUID fileUUID = UUID.randomUUID();
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/" + fileUUID))
+            .andDo(print())
+            .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void shouldReturn500StatusWhenS3Throws() throws Exception {
+    ideaId = 223L;
+    when(minioService.getObject(anyString(), anyString(), anyLong())).thenThrow(OperationFailedException.class);
+
+    //post file to be downloaded
+    mockMvc.perform(MockMvcRequestBuilders
+                    .multipart(HttpMethod.POST, url)
+                    .file(mockMultipartFile)
+                    .param("idea_id", ideaId.toString()))
+            .andExpect(status().isCreated());
+
+    UUID fileUUID = getUUIDWithArgumentCaptor();
+    //download file
+    mockMvc.perform(MockMvcRequestBuilders
+                    .get(url + "/" + fileUUID))
+            .andDo(print())
+            .andExpect(status().isInternalServerError());
   }
 
 }
