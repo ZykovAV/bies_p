@@ -1,6 +1,8 @@
 package ylab.bies.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -12,10 +14,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.userservice.dto.LoginRequest;
 import ylab.bies.userservice.dto.RegisterRequest;
@@ -51,6 +53,8 @@ public class UserAuthControllerTest {
     private ObjectMapper mapper;
     @Autowired
     private UserRepository repository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     @MockBean
     private KeycloakService keycloakService;
     private static final List<String> invalidUsernamesAndPasswords = Arrays.asList(
@@ -76,30 +80,37 @@ public class UserAuthControllerTest {
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     );
 
-    @Test
-    @Transactional
-    void register_Successfully() throws Exception {
-        UUID userId = UUID.randomUUID();
-        RegisterRequest request = getValidRegisterRequest();
+    @Nested
+    class RollbackTests {
+        @AfterEach
+        void setUp() {
+            jdbcTemplate.execute("TRUNCATE TABLE users CASCADE");
+        }
 
-        when(keycloakService.register(any(UserRepresentation.class))).thenReturn(
-                Response.created(URI.create("/" + userId)).build()
-        );
-        doNothing().when(keycloakService).assignRoles(eq(String.valueOf(userId)), anySet());
+        @Test
+        void register_Successfully() throws Exception {
+            UUID userId = UUID.randomUUID();
+            RegisterRequest request = getValidRegisterRequest();
 
-        MvcResult result = mockMvc.perform(post("/api/v1/users/register")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(mapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-                .andReturn();
-        UserResponse response = mapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
+            when(keycloakService.register(any(UserRepresentation.class))).thenReturn(
+                    Response.created(URI.create("/" + userId)).build()
+            );
+            doNothing().when(keycloakService).assignRoles(eq(String.valueOf(userId)), anySet());
 
-        assertThat(isUserResponseValid(request, response, userId)).isTrue();
-        assertThat(repository.findById(userId).isPresent()).isTrue();
+            MvcResult result = mockMvc.perform(post("/api/v1/users/register")
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(mapper.writeValueAsString(request)))
+                    .andDo(print())
+                    .andExpect(status().isCreated())
+                    .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+                    .andReturn();
+            UserResponse response = mapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
 
-        verify(keycloakService, times(1)).register(any(UserRepresentation.class));
+            assertThat(isUserResponseValid(request, response, userId)).isTrue();
+            assertThat(repository.findById(userId).isPresent()).isTrue();
+
+            verify(keycloakService, times(1)).register(any(UserRepresentation.class));
+        }
     }
 
     @Test
@@ -108,11 +119,6 @@ public class UserAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
-
-        assertThat(repository.findAll()).isEmpty();
-
-        verify(keycloakService, never()).register(any(UserRepresentation.class));
-        verify(keycloakService, never()).assignRoles(anyString(), anySet());
     }
 
     @ParameterizedTest

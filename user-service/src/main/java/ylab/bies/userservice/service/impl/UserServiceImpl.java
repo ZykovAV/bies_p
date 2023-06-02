@@ -11,10 +11,7 @@ import ylab.bies.userservice.config.ApplicationConfiguration;
 import ylab.bies.userservice.dto.*;
 import ylab.bies.userservice.entity.Role;
 import ylab.bies.userservice.entity.User;
-import ylab.bies.userservice.exception.InvalidCredentialsException;
-import ylab.bies.userservice.exception.InvalidOldPasswordException;
-import ylab.bies.userservice.exception.UserAlreadyExistException;
-import ylab.bies.userservice.exception.UserRegistrationException;
+import ylab.bies.userservice.exception.*;
 import ylab.bies.userservice.mapper.UserMapper;
 import ylab.bies.userservice.repository.RoleRepository;
 import ylab.bies.userservice.repository.UserRepository;
@@ -33,6 +30,8 @@ public class UserServiceImpl implements UserService {
     private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid login or password";
     private static final String USER_ALREADY_EXISTS_MESSAGE = "User with that username or email is already exists";
     private static final String INVALID_OLD_PASSWORD_MESSAGE = "Invalid old password";
+    private static final String USER_NOT_FOUND_MESSAGE = "User with ID %s not found";
+    private static final String USER_NOT_FOUND_LOG_MESSAGE = "Failed to get a user's contact. User with ID {} not found";
     private static final String FAILED_TO_LOGIN_MESSAGE = "Failed to login a user";
     private static final String FAILED_TO_REGISTER_MESSAGE = "Failed to register a new User";
     private static final String FAILED_CHANGE_PASSWORD_MESSAGE = "Failed to change password";
@@ -72,6 +71,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     public UserResponse getProfile() {
         UUID userId = tokenManager.getUserIdFromToken();
@@ -109,6 +109,23 @@ public class UserServiceImpl implements UserService {
             throw new InvalidOldPasswordException(INVALID_OLD_PASSWORD_MESSAGE);
         }
         keycloakService.changePassword(String.valueOf(userId), request.getNewPassword());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ContactsResponse getContactsById(String id) {
+        try {
+            UUID userId = UUID.fromString(id);
+            User user = repository.findById(userId).orElseThrow(() -> getUserNotFoundException(id));
+            return mapper.toContactsResponse(user);
+        } catch (IllegalArgumentException e) {
+            throw getUserNotFoundException(id);
+        }
+    }
+
+    private UserNotFoundException getUserNotFoundException(String id) {
+        log.info(USER_NOT_FOUND_LOG_MESSAGE, id);
+        return new UserNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, id));
     }
 
     private void handleRegistrationResponse(Response response) {
