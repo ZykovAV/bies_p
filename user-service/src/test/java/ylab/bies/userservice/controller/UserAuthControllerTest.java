@@ -219,7 +219,7 @@ public class UserAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(mapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnauthorized());
 
         verify(keycloakService, times(1)).getToken(request.getUsername(), request.getPassword());
     }

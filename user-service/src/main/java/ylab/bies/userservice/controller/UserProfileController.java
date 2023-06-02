@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ylab.bies.userservice.dto.ChangeFullNameRequest;
 import ylab.bies.userservice.dto.ChangeFullNameResponse;
+import ylab.bies.userservice.dto.ChangePasswordRequest;
 import ylab.bies.userservice.dto.UserResponse;
 import ylab.bies.userservice.service.UserService;
 
@@ -37,5 +38,14 @@ public class UserProfileController {
         ChangeFullNameResponse response = service.changeFullName(request);
         log.info("User successfully changed his full name");
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PutMapping("/password")
+    @Operation(security = @SecurityRequirement(name = "Bearer Token"))
+    public ResponseEntity<Void> changePassword(@RequestBody @Valid ChangePasswordRequest request) {
+        log.info("Changing user's password");
+        service.changePassword(request);
+        log.info("User successfully changed his password");
+        return ResponseEntity.noContent().build();
     }
 }

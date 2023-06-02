@@ -11,10 +11,16 @@ import java.util.UUID;
 @Component
 public class AccessTokenManager {
     private static final String USER_ID_CLAIM = "sub";
+    private static final String USERNAME_CLAIM = "preferred_username";
 
     public UUID getUserIdFromToken() {
         Jwt jwt = getJwtFromContext();
         return UUID.fromString((String) jwt.getClaims().get(USER_ID_CLAIM));
+    }
+
+    public String getUsernameFromToken() {
+        Jwt jwt = getJwtFromContext();
+        return (String) jwt.getClaims().get(USERNAME_CLAIM);
     }
 
     private Jwt getJwtFromContext() {

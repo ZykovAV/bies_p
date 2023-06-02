@@ -6,10 +6,12 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.AccessTokenResponse;
+import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Service;
 import ylab.bies.userservice.config.KeycloakConfiguration;
+import ylab.bies.userservice.mapper.CredentialRepresentationMapper;
 import ylab.bies.userservice.service.KeycloakService;
 
 import javax.ws.rs.core.Response;
@@ -22,6 +24,7 @@ import java.util.Set;
 public class KeycloakServiceImpl implements KeycloakService {
     private final KeycloakConfiguration configuration;
     private final RealmResource realmResource;
+    private final CredentialRepresentationMapper credentialMapper;
 
     @Override
     public Response register(UserRepresentation user) {
@@ -69,6 +72,7 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     @Override
     public void changePassword(String userId, String newPassword) {
-        throw new UnsupportedOperationException();
+        CredentialRepresentation credentials = credentialMapper.toCredentialRepresentation(newPassword).get(0);
+        realmResource.users().get(userId).resetPassword(credentials);
     }
 }
