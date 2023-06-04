@@ -34,8 +34,8 @@ public class FileServiceImpl implements FileService {
 
   @Transactional(rollbackFor = Exception.class)
   @Override
-  public void addFile(Long ideaId, MultipartFile file, String bearerToken) {
-    if (bearerToken == null || !ideaServiceClient.validateIdeaOwner(ideaId, bearerToken)) {
+  public void addFile(Long ideaId, MultipartFile file) {
+    if (!ideaServiceClient.validateIdeaOwner(ideaId)) {
       throw new IdeaOwnershipException(ideaId);
     }
 
@@ -92,8 +92,7 @@ public class FileServiceImpl implements FileService {
             .orElseThrow(RequestedFileNotFoundException::new);
     long ideaId = fileModelToRemove.getIdeaId();
 
-    String dummyToken = "test";
-    if (dummyToken == null || !ideaServiceClient.validateIdeaOwner(ideaId, dummyToken)) {
+    if (!ideaServiceClient.validateIdeaOwner(ideaId)) {
       throw new IdeaOwnershipException(ideaId);
     }
 

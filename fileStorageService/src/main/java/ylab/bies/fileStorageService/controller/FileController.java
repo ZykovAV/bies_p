@@ -98,7 +98,7 @@ public class FileController {
     log.info("File received: " + file.getOriginalFilename());
     //TODO: token logic to be updated
     String dummyToken = "test";
-    fileService.addFile(ideaId, file, dummyToken);
+    fileService.addFile(ideaId, file);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
