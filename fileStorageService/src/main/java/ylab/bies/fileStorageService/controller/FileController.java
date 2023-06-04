@@ -96,8 +96,6 @@ public class FileController {
   public ResponseEntity<Void> saveFile(@RequestParam("idea_id") Long ideaId,
                                        @RequestParam MultipartFile file) {
     log.info("File received: " + file.getOriginalFilename());
-    //TODO: token logic to be updated
-    String dummyToken = "test";
     fileService.addFile(ideaId, file);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }

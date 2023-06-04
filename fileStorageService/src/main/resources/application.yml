@@ -38,7 +38,6 @@ server:
     include-exception: false
 
 s3:
-  #To be updated
   url: http://127.0.0.1:9000
   login: admin_user
   password: admin_password
