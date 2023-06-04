@@ -232,8 +232,7 @@ public class UserProfileControllerTest {
     @Test
     void changePassword_EmptyBody() throws Exception {
         mockMvc.perform(put("/api/v1/users/profile/password")
-                        .with(jwt())
-                )
+                        .with(jwt()))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }

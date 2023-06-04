@@ -58,7 +58,7 @@ public class UserServiceImpl implements UserService {
             keycloakService.assignRoles(String.valueOf(userId), configuration.getUserDefaultRoles());
 
             User user = mapper.toUser(request);
-            user = create(user, userId);
+            user = prepareAndSave(user, userId);
 
             return mapper.toUserResponse(user, keycloakUser);
         }
@@ -104,15 +104,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-        UUID userId = tokenManager.getUserIdFromToken();
         String username = tokenManager.getUsernameFromToken();
         try {
             keycloakService.getToken(username, request.getOldPassword());
+            UUID userId = tokenManager.getUserIdFromToken();
+            keycloakService.changePassword(String.valueOf(userId), request.getNewPassword());
         } catch (NotAuthorizedException e) {
             log.info("{}. {}", FAILED_CHANGE_PASSWORD_MESSAGE, INVALID_OLD_PASSWORD_MESSAGE);
             throw new InvalidOldPasswordException(INVALID_OLD_PASSWORD_MESSAGE);
         }
-        keycloakService.changePassword(String.valueOf(userId), request.getNewPassword());
     }
 
     @Override
@@ -158,7 +158,7 @@ public class UserServiceImpl implements UserService {
         return UUID.fromString(CreatedResponseUtil.getCreatedId(response));
     }
 
-    private User create(User user, UUID userId) {
+    private User prepareAndSave(User user, UUID userId) {
         user.setId(userId);
         assignDefaultRoles(user);
         return repository.save(user);
