@@ -2,7 +2,6 @@ package ylab.bies.ideaservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,13 +22,14 @@ import ylab.bies.ideaservice.repository.IdeaRepository;
 import ylab.bies.ideaservice.service.IdeaService;
 import ylab.bies.ideaservice.service.KafkaProducerService;
 import ylab.bies.ideaservice.service.VoteService;
-import ylab.bies.ideaservice.util.AccessTokenDecoder;
+import ylab.bies.ideaservice.util.AccessTokenManager;
 import ylab.bies.ideaservice.util.enums.Status;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import static ylab.bies.ideaservice.util.enums.KafkaNotification.*;
 import static ylab.bies.ideaservice.util.enums.Status.*;
 
 
@@ -40,19 +40,16 @@ public class IdeaServiceImpl implements IdeaService {
 
     private final VoteService voteService;
     private final IdeaRepository ideaRepository;
-    private final AccessTokenDecoder decoder;
+    private final AccessTokenManager tokenManager;
     private final IdeaMapper ideaMapper;
     private final KafkaProducerService kafkaProducerService;
-    public static final String PUBLISHED_IDEA = "Idea published";
-    public static final String ACCEPTED_IDEA = "Idea accepted";
-    public static final String REJECTED_IDEA = "Idea rejected";
 
 
     @Override
     @Transactional(readOnly = true)
-    public IdeaResponseDto findById(String token, Long id) {
+    public IdeaResponseDto findById(Long id) {
         Idea idea = ideaRepository.findById(id).orElse(null);
-        UUID userId = decoder.getUuidFromToken(token);
+        UUID userId = tokenManager.getUserIdFromToken();
         if (idea == null) {
             log.info("There's no idea with id={}", id);
             throw new IdeaNotFoundException("There's no idea with id=" + id);
@@ -83,16 +80,16 @@ public class IdeaServiceImpl implements IdeaService {
             throw new StatusNotChangedException("Change status for idea id=" + id + " is not allowed");
         }
         ideaRepository.changeStatus(id, status);
-        String newStatus = status.equals(ACCEPTED.getValue()) ? ACCEPTED_IDEA : REJECTED_IDEA;
-        NotificationDto notificationDto = createNotificationDto(newStatus, decoder.getUuidFromToken("test-token"), id);
+        String newStatus = status.equals(ACCEPTED.getValue()) ? ACCEPTED_MESSAGE.getValue() : REJECTED_MESSAGE.getValue();
+        NotificationDto notificationDto = createNotificationDto(newStatus, tokenManager.getUserIdFromToken(), id);
         kafkaProducerService.sendNotification(notificationDto);
         log.info("Status of idea with id={} has been changed to '{}'", id, newStatus);
     }
 
     @Override
     @Transactional
-    public void rate(String token, Long id, boolean isLike) {
-        UUID userId = decoder.getUuidFromToken(token);
+    public void rate(Long id, boolean isLike) {
+        UUID userId = tokenManager.getUserIdFromToken();
         UUID authorId = ideaRepository.getAuthorId(id).orElse(null);
         if (authorId == null) {  // проверка существования такой идеи (идей без автора не существует)
             log.info("There's no idea with id={}", id);
@@ -106,11 +103,6 @@ public class IdeaServiceImpl implements IdeaService {
     }
 
 
-    private void updateRating(Long id) {
-        ideaRepository.updateRating(id, voteService.getRating(id));
-    }
-
-
     @Transactional(readOnly = true)
     public Page<IdeaResponseDto> getAllIdeas(Pageable pageable) {
         Page<Idea> ideas = ideaRepository.findAllByStatusNotOrderByRatingDesc(DRAFT.getValue(), pageable);
@@ -120,10 +112,19 @@ public class IdeaServiceImpl implements IdeaService {
         return listDto;
     }
 
+    @Transactional(readOnly = true)
+    public Page<IdeaDraftResponseDto> getAllUsersDrafts(Pageable pageable) {
+        UUID userId = tokenManager.getUserIdFromToken();
+        Page<Idea> drafts = ideaRepository.findByStatusAndUserId(DRAFT.getValue(), userId, pageable);
+        log.info("List all user's drafts: {}", drafts);
+        Page<IdeaDraftResponseDto> listDto = drafts.map(ideaMapper::ideaEntityToIdeaDraftResponseDto);
+        return listDto;
+    }
+
 
     @Transactional
-    public IdeaDraftResponseDto createDraftIdea(String token, IdeaDraftRequestDto draftRequestDto) {
-        UUID userId = decoder.getUuidFromToken(token);
+    public IdeaDraftResponseDto createDraftIdea(IdeaDraftRequestDto draftRequestDto) {
+        UUID userId = tokenManager.getUserIdFromToken();
         Idea draft = ideaMapper.ideaDraftRequestDtoToIdeaEntity(draftRequestDto);
         draft.setUserId(userId);
         draft.setStatus(DRAFT.getValue());
@@ -134,8 +135,8 @@ public class IdeaServiceImpl implements IdeaService {
     }
 
     @Transactional
-    public IdeaResponseDto updateIdea(String token, Long id, IdeaRequestDto ideaRequestDto) {
-        UUID userId = decoder.getUuidFromToken(token);
+    public IdeaResponseDto updateIdea(Long id, IdeaRequestDto ideaRequestDto) {
+        UUID userId = tokenManager.getUserIdFromToken();
         Idea ideaFromDB = ideaRepository.findById(id).orElseThrow(() ->
                 new IdeaNotFoundException(String.format("Idea with id  %s not found in database", id)));
         log.info("Idea from DB {} ", ideaFromDB);
@@ -143,16 +144,20 @@ public class IdeaServiceImpl implements IdeaService {
         ideaStatusAndUserIdVerification(userId, ideaFromDB);
 
         Idea ideaForUpdate = ideaMapper.ideaRequestDtoToIdeaEntity(ideaRequestDto);
-        ideaRepository.updateIdeaById(ideaForUpdate.getId(), ideaForUpdate.getName(),
+        ideaRepository.updateIdeaById(id, ideaForUpdate.getName(),
                 ideaForUpdate.getText(), UNDER_CONSIDERATION.getValue());
         Idea updatedIdea = ideaRepository.findById(id).orElseThrow(() -> new IdeaNotFoundException(" Edited idea not found "));
         log.info(String.format("Idea %s edited successfully ", updatedIdea));
 
-        NotificationDto notificationDto = createNotificationDto(PUBLISHED_IDEA, userId, updatedIdea.getId());
+        NotificationDto notificationDto = createNotificationDto(PUBLISHED_MESSAGE.getValue(), userId, updatedIdea.getId());
         kafkaProducerService.sendNotification(notificationDto);
         return ideaMapper.ideaEntityToIdeaResponseDto(updatedIdea);
     }
 
+
+    private void updateRating(Long id) {
+        ideaRepository.updateRating(id, voteService.getRating(id));
+    }
 
     private void ideaStatusAndUserIdVerification(UUID userId, Idea ideaFromDB) {
         if (!userId.equals(ideaFromDB.getUserId())) {

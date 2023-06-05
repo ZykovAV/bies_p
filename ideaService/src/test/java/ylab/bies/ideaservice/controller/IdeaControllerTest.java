@@ -19,6 +19,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.request.IdeaRequestDto;
+import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
 import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 import ylab.bies.ideaservice.service.IdeaService;
 import ylab.bies.ideaservice.service.KafkaProducerService;
@@ -30,6 +31,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -45,32 +47,31 @@ import static ylab.bies.ideaservice.util.enums.Status.*;
 public class IdeaControllerTest {
 
     public static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:15.2");
-
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private ObjectMapper objectMapper;
-
     @Autowired
     private IdeaService ideaService;
-
     @MockBean
     private KafkaProducerService kafkaProducerService;
 
+    public static final UUID USER_ID = UUID.fromString("a81bc81b-dead-4e5d-abff-90865d1e13b2");
 
-    // CreateDraftIdea tests
+
+    /**
+     * CreateDraftIdea tests
+     */
 
     @Test
     @DisplayName("Create a draft. Should be successful.")
     public void testCreateDraftIdea_successAndReturns201() throws Exception {
-
         IdeaDraftRequestDto request = new IdeaDraftRequestDto();
         request.setName("Draft Idea");
         request.setText("Draft idea text");
-
         mockMvc.perform(post("/api/v1/ideas/draft")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
@@ -83,12 +84,14 @@ public class IdeaControllerTest {
     @DisplayName("Create a draft. Returns a bad request - null field.")
     public void testCreateDraftIdea_badRequestAndReturns400() throws Exception {
 
+
         IdeaDraftRequestDto request = new IdeaDraftRequestDto();
         request.setName(null);
         request.setText(null);
 
         mockMvc.perform(post("/api/v1/ideas/draft")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
@@ -104,30 +107,48 @@ public class IdeaControllerTest {
         request.setText("small text");
 
         mockMvc.perform(post("/api/v1/ideas/draft")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("Create a draft. Returns 401 Unauthorized.")
+    public void testCreateDraftIdea_returnsUnauthorized401() throws Exception {
 
-    // GetAllIdeas tests
+        IdeaDraftRequestDto request = new IdeaDraftRequestDto();
+        request.setName("Draft Idea");
+        request.setText("Draft idea text");
+
+        mockMvc.perform(post("/api/v1/ideas/draft")
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andDo(print());
+    }
+
+
+    /**
+     * GetAllIdeas tests
+     */
 
     @Test
     @DisplayName("Get All Ideas. Should be successful.")
     public void testGetAllIdeas_successAndReturns200() throws Exception {
 
         dataGenerationForGetAllIdeas();
-        UUID testingUserId = UUID.fromString("a81bc81b-dead-4e5d-abff-90865d1e13b1");
 
         List<IdeaResponseDto> ideas = Arrays.asList(
-                new IdeaResponseDto(1L, "Idea", "Idea test text", 0, testingUserId, 2, null),
-                new IdeaResponseDto(2L, "Idea 2", "Idea test text2", 0, testingUserId, 2, null)
+                new IdeaResponseDto(1L, "Idea", "Idea test text", 0, USER_ID, 2, null),
+                new IdeaResponseDto(2L, "Idea 2", "Idea test text2", 0, USER_ID, 2, null)
         );
         Page<IdeaResponseDto> testPageIdeas = new PageImpl<>(ideas);
 
         mockMvc.perform(get("/api/v1/ideas")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(testPageIdeas))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -137,7 +158,7 @@ public class IdeaControllerTest {
                 .andExpect(jsonPath("$.content[0].name").value("Idea"))
                 .andExpect(jsonPath("$.content[0].text").value("Idea test text"))
                 .andExpect(jsonPath("$.content[0].rating").value(0))
-                .andExpect(jsonPath("$.content[0].userId").value(testingUserId.toString()))
+                .andExpect(jsonPath("$.content[0].userId").value(USER_ID.toString()))
                 .andExpect(jsonPath("$.content[0].status").value(2));
 
     }
@@ -149,7 +170,8 @@ public class IdeaControllerTest {
         Page<IdeaResponseDto> testPage = new PageImpl<>(testList); //emptyPage
 
         mockMvc.perform(get("/api/v1/ideas")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(testPage))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -161,19 +183,35 @@ public class IdeaControllerTest {
     public void testGetAllIdeas_testPagination() throws Exception {
 
         mockMvc.perform(get("/api/v1/ideas")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .param("page", "0")
                         .param("limit", "4")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
-    // Update tests
+    @Test
+    @DisplayName("Get All Ideas test. Returns 401 Unauthorized.")
+    public void testGetAllIdeas_returnsUnauthorized401() throws Exception {
+
+        mockMvc.perform(get("/api/v1/ideas")
+                        .param("page", "0")
+                        .param("limit", "4")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andDo(print());
+    }
+
+
+    /**
+     * UpdateIdea tests
+     */
 
     @Test
     @DisplayName("Update a idea. Should be successful.")
     public void testUpdateIdea_successAndReturns200() throws Exception {
-        dataGeneration();
+        dataGenerationDraftOne();
 
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
         requestForUpdate.setId(1L);
@@ -181,7 +219,8 @@ public class IdeaControllerTest {
         requestForUpdate.setText("Idea for Update text");
 
         mockMvc.perform(put("/api/v1/ideas/1")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(requestForUpdate))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -195,7 +234,7 @@ public class IdeaControllerTest {
     @Test
     @DisplayName("Update a idea. Returns a bad request - not valid field.")
     public void testUpdateIdea_InvalidInput_badRequestAndReturns400() throws Exception {
-        dataGeneration();
+        dataGenerationDraftOne();
 
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
         requestForUpdate.setId(1L);
@@ -203,7 +242,8 @@ public class IdeaControllerTest {
         requestForUpdate.setText("Idea for Update text");
 
         mockMvc.perform(put("/api/v1/ideas/1")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(requestForUpdate))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -213,7 +253,7 @@ public class IdeaControllerTest {
     @Test
     @DisplayName("Update a idea. Returns Not Found Exception 404.")
     public void testUpdateIdea_ReturnsNotFound404() throws Exception {
-        dataGeneration();
+        dataGenerationDraftOne();
 
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
         requestForUpdate.setId(5L); //   Invalid id
@@ -222,7 +262,8 @@ public class IdeaControllerTest {
 
 
         mockMvc.perform(put("/api/v1/ideas/5")  //  Invalid id
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(requestForUpdate))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
@@ -230,31 +271,104 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Update a idea. Returns method not allowed.")
-    public void testUpdateIdea_ReturnsMethodNotAllowed405() throws Exception {
-        dataGeneration();
-
+    @DisplayName("Update a idea. Returns 401 Unauthorized.")
+    public void testUpdateIdea_ReturnsUnauthorized401() throws Exception {
+        dataGenerationDraftOne();
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
-        requestForUpdate.setId(null);
+        requestForUpdate.setId(1L);
         requestForUpdate.setName("Idea");
         requestForUpdate.setText("Idea for Update text");
-
-
-        mockMvc.perform(put("/api/v1/ideas") //invalid request
-                        .header("Authorization", "test-token")
+        mockMvc.perform(put("/api/v1/ideas/1") //invalid request
                         .content(objectMapper.writeValueAsString(requestForUpdate))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isMethodNotAllowed())
+                .andExpect(status().isUnauthorized())
                 .andDo(print());
     }
 
 
 
+    /**
+     *  GetAllUsersDrafts tests
+     */
+
+    @Test
+    @DisplayName("Get All user's drafts. Should be successful.")
+    public void testGetAllUsersDrafts_successAndReturns200() throws Exception {
+
+        dataGenerationDraftOne();
+        dataGenerationDraftTwo();
+
+        List<IdeaDraftResponseDto> ideas = Arrays.asList(
+                new IdeaDraftResponseDto(1L, "Draft Idea", "Draft Idea text"),
+                new IdeaDraftResponseDto(2L, "Draft Idea2", "Draft Idea text2")
+        );
+        Page<IdeaDraftResponseDto> testPageIdeas = new PageImpl<>(ideas);
+
+        mockMvc.perform(get("/api/v1/ideas/drafts")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
+                        .param("page", "0")
+                        .param("size", "5")
+                        .content(objectMapper.writeValueAsString(testPageIdeas))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Draft Idea"))
+                .andExpect(jsonPath("$.content[0].text").value("Draft Idea text"));
+    }
+
+    @Test
+    @DisplayName("Get All user's drafts. Returning a list without drafts.")
+    public void testGetAllUsersDrafts_returnsListWithoutDrafts() throws Exception {
+        List<IdeaDraftResponseDto> testList = new ArrayList<>();
+        Page<IdeaDraftResponseDto> testPage = new PageImpl<>(testList); //emptyPage
+
+        mockMvc.perform(get("/api/v1/ideas/drafts")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
+                        .content(objectMapper.writeValueAsString(testPage))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Get All user's drafts. Invalid pagination. Returning Ok - 200.")
+    public void testGetAllUsersDrafts_successWithInvalidPaginationAndReturns200() throws Exception {
+
+        mockMvc.perform(get("/api/v1/ideas/drafts")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
+                        .param("page", "-3")
+                        .param("size", "-10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Get All user's drafts. Returns 401 Unauthorized.")
+    public void testGetAllUsersDrafts_returnsUnauthorized401() throws Exception {
+        mockMvc.perform(get("/api/v1/ideas/drafts")
+                        .param("page", "0")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andDo(print());
+    }
+
+
+    /**
+     *  ChangeStatus tests
+     */
+
     @Test
     @DisplayName("ChangeStatus. Change DRAFT(1) to IMPOSSIBLE STATUS. Should return 304")
     public void changeDraftToImpossibleStatus() throws Exception {
         initTable();  // add test draft and then try to change status
-        for (int i : new int[]{-1,0,5}) {
+        for (int i : new int[]{-1, 0, 5}) {
             mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/status?statusId=" + i)
                             .header("Authorization", "test-token"))
                     .andExpect(status().isNotModified());
@@ -313,7 +427,6 @@ public class IdeaControllerTest {
     }
 
 
-
     @Test
     @DisplayName("ChangeStatus. Change REJECTED(4) to ANY STATUS. Should return 304")
     public void changeRejectedToAnyStatus() throws Exception {
@@ -325,10 +438,15 @@ public class IdeaControllerTest {
         }
     }
 
+
+    /**
+     * Like tests
+     */
+
     @Test
     @DisplayName("Like. Like an non-existent idea. Should return 404")
     public void likeAnNonExistentIdea() throws Exception {
-        for (int i : new int[]{-1,0,100}) {
+        for (int i : new int[]{-1, 0, 100}) {
             mockMvc.perform(MockMvcRequestBuilders.patch(String.format("/api/v1/ideas/%d/like", i))
                             .header("Authorization", "test-token"))
                     .andExpect(status().isNotFound());
@@ -426,11 +544,14 @@ public class IdeaControllerTest {
     }
 
 
+    /**
+     * Dislike tests
+     */
 
     @Test
     @DisplayName("Dislike. Dislike an non-existent idea. Should return 404")
     public void dislikeAnNonExistentIdea() throws Exception {
-        for (int i : new int[]{-1,0,100}) {
+        for (int i : new int[]{-1, 0, 100}) {
             mockMvc.perform(MockMvcRequestBuilders.patch(String.format("/api/v1/ideas/%d/dislike", i))
                             .header("Authorization", "test-token"))
                     .andExpect(status().isNotFound());
@@ -528,6 +649,9 @@ public class IdeaControllerTest {
     }
 
 
+    /**
+     *  GetById tests
+     */
 
     @Test
     @DisplayName("Get by id. Get an existing idea. Should be successful.")
@@ -573,6 +697,8 @@ public class IdeaControllerTest {
 
 
     /**
+     * Data generation methods
+
      * Add ideas with those statuses (using API):
      * (id=1) status: Draft
      * (id=2) status: Under Consideration
@@ -656,27 +782,44 @@ public class IdeaControllerTest {
     }
 
 
-
-
     /**
-     * This private method adds data to the test container for further testing.
+     * This private methods adds data to the test container for further testing.
      */
 
-    private void dataGeneration() throws Exception {
+    private void dataGenerationDraftOne() throws Exception {
 
         IdeaDraftRequestDto request = new IdeaDraftRequestDto();
         request.setName("Draft Idea");
-        request.setText("Draft idea text");
+        request.setText("Draft Idea text");
 
 
         mockMvc.perform(post("/api/v1/ideas/draft")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.name", is("Draft Idea")))
-                .andExpect(jsonPath("$.text", is("Draft idea text")));
+                .andExpect(jsonPath("$.text", is("Draft Idea text")));
+    }
+
+    private void dataGenerationDraftTwo() throws Exception {
+
+        IdeaDraftRequestDto request = new IdeaDraftRequestDto();
+        request.setName("Draft Idea2");
+        request.setText("Draft Idea text2");
+
+
+        mockMvc.perform(post("/api/v1/ideas/draft")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id", is(2)))
+                .andExpect(jsonPath("$.name", is("Draft Idea2")))
+                .andExpect(jsonPath("$.text", is("Draft Idea text2")));
     }
 
 
@@ -698,7 +841,8 @@ public class IdeaControllerTest {
 
         //создаем черновик
         mockMvc.perform(post("/api/v1/ideas/draft")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
@@ -708,7 +852,8 @@ public class IdeaControllerTest {
 
         //публикуем реальную идею(редактируем черновик)
         mockMvc.perform(put("/api/v1/ideas/1")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(requestForUpdate))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -716,7 +861,6 @@ public class IdeaControllerTest {
                 .andExpect(jsonPath("$.name", is("Idea")))
                 .andExpect(jsonPath("$.text", is("Idea test text")))
                 .andExpect(jsonPath("$.status", is(UNDER_CONSIDERATION.getValue())));
-
 
 
         //2 идея
@@ -731,7 +875,8 @@ public class IdeaControllerTest {
 
         //создаем черновик
         mockMvc.perform(post("/api/v1/ideas/draft")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(request2))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
@@ -741,7 +886,8 @@ public class IdeaControllerTest {
 
         //публикуем реальную идею(редактируем черновик)
         mockMvc.perform(put("/api/v1/ideas/2")
-                        .header("Authorization", "test-token")
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(requestForUpdate2))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())

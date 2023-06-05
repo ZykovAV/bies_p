@@ -30,8 +30,13 @@ public interface IdeaRepository extends JpaRepository<Idea, Long> {
 
     Page<Idea> findAllByStatusNotOrderByRatingDesc(int i, Pageable pageable);
 
+    Page<Idea> findByStatusAndUserId(Integer value, UUID userId, Pageable pageable);
+
     @Modifying(clearAutomatically = true)
     @Query("update Idea  i set i.name = :newName, i.text = :newText, i.status = :newStatus where i.id = :id")
     void updateIdeaById(@Param("id") Long id, @Param("newName") String name, @Param("newText") String text,
                         @Param("newStatus") int status);
+
+
+
 }

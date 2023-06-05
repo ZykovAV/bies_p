@@ -38,8 +38,8 @@ public class IdeaController {
                     {@ApiResponse(description = "draft idea",
                             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = IdeaDraftResponseDto.class)))})
-    public ResponseEntity<IdeaDraftResponseDto> createDraftIdea(@RequestHeader("Authorization") String token, @Valid @RequestBody IdeaDraftRequestDto request) {
-        IdeaDraftResponseDto response = ideaService.createDraftIdea(token, request);
+    public ResponseEntity<IdeaDraftResponseDto> createDraftIdea(@Valid @RequestBody IdeaDraftRequestDto request) {
+        IdeaDraftResponseDto response = ideaService.createDraftIdea(request);
         log.info("Response with created idea: {}", response);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -47,40 +47,35 @@ public class IdeaController {
 
     @GetMapping(value = "/{id}")
     @Operation(summary = "Request for a info about idea")
-    public ResponseEntity<IdeaResponseDto> getById(@RequestHeader("Authorization") String token,
-                                                   @PathVariable Long id) {
-        return new ResponseEntity<>(ideaService.findById(token, id), HttpStatus.OK);
+    public ResponseEntity<IdeaResponseDto> getById(@PathVariable Long id) {
+        return new ResponseEntity<>(ideaService.findById(id), HttpStatus.OK);
     }
 
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Change status of idea")
-    public ResponseEntity<HttpStatus> changeStatus(@PathVariable Long id,
-                                                   @RequestParam Integer statusId) {
+    public ResponseEntity<HttpStatus> changeStatus(@PathVariable Long id, @RequestParam Integer statusId) {
         ideaService.changeStatus(id, statusId);
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
     @PatchMapping("/{id}/like")
     @Operation(summary = "Like idea")
-    public ResponseEntity<HttpStatus> like(@RequestHeader("Authorization") String token,
-                                           @PathVariable Long id) {
-        ideaService.rate(token, id, true);
+    public ResponseEntity<HttpStatus> like(@PathVariable Long id) {
+        ideaService.rate(id, true);
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
     @PatchMapping("/{id}/dislike")
     @Operation(summary = "Dislike idea")
-    public ResponseEntity<HttpStatus> dislike(@RequestHeader("Authorization") String token,
-                                              @PathVariable Long id) {
-        ideaService.rate(token, id, false);
+    public ResponseEntity<HttpStatus> dislike(@PathVariable Long id) {
+        ideaService.rate(id, false);
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
     @GetMapping
     @Operation(summary = "Getting a list of ideas", description = "List of all users ideas")
-    public ResponseEntity<Page<IdeaResponseDto>> getAllIdeas(@RequestHeader("Authorization") String token,
-                                                             @NotNull final Pageable pageable) {
+    public ResponseEntity<Page<IdeaResponseDto>> getAllIdeas(@NotNull final Pageable pageable) {
         Page<IdeaResponseDto> ideas = ideaService.getAllIdeas(pageable);
         log.info(String.format("Ideas %s received successfully", ideas));
         return new ResponseEntity<>(ideas, HttpStatus.OK);
@@ -91,10 +86,22 @@ public class IdeaController {
             responses = {@ApiResponse(description = "Updated Idea",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = IdeaResponseDto.class)))})
-    public ResponseEntity<IdeaResponseDto> updateIdea(@RequestHeader("Authorization") String token,
-                                                      @Valid @RequestBody IdeaRequestDto editRequest, @PathVariable Long id) {
-        IdeaResponseDto updatedIdea = ideaService.updateIdea(token, id, editRequest);
+    public ResponseEntity<IdeaResponseDto> updateIdea(@Valid @RequestBody IdeaRequestDto editRequest, @PathVariable Long id) {
+        IdeaResponseDto updatedIdea = ideaService.updateIdea(id, editRequest);
         log.info("Idea updated successfully");
         return new ResponseEntity<>(updatedIdea, HttpStatus.OK);
+    }
+
+
+    @GetMapping(value = "/drafts")
+    @Operation(summary = "Getting a list of drafts",
+            responses =
+                    {@ApiResponse(description = "List of all users drafts",
+                            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = Page.class)))})
+    public ResponseEntity<Page<IdeaDraftResponseDto>> getAllUsersDrafts(@NotNull final Pageable pageable) {
+        Page<IdeaDraftResponseDto> drafts = ideaService.getAllUsersDrafts(pageable);
+        log.info(String.format(" User's drafts %s received successfully", drafts));
+        return new ResponseEntity<>(drafts, HttpStatus.OK);
     }
 }
