@@ -25,14 +25,8 @@ public class SecurityConfiguration {
                         .antMatchers(
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/swagger-ui/**"
                         ).permitAll()
-                        .antMatchers(HttpMethod.GET, "/api/v1/ideas").authenticated()
-                        .antMatchers(HttpMethod.POST, "/api/v1/ideas/draft").authenticated()
-                        .antMatchers(HttpMethod.GET, "/api/v1/ideas/{id}").authenticated()
-                        .antMatchers(HttpMethod.PUT, "/api/v1/ideas/{id}").authenticated()
-                        .antMatchers(HttpMethod.PATCH, "/api/v1/ideas/{id}/like").authenticated()
-                        .antMatchers(HttpMethod.PATCH, "/api/v1/ideas/{id}/dislike").authenticated()
-                        .antMatchers(HttpMethod.GET, "/api/v1/ideas/drafts").authenticated()
                         .antMatchers(HttpMethod.PATCH, "/api/v1/ideas/{id}/status").hasRole("EXPERT")
+                        .antMatchers("/api/v1/ideas/**").authenticated()
                         .anyRequest().denyAll())
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
