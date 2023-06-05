@@ -170,6 +170,16 @@ public class UserContactsControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void getAllUsersContactById_InvalidSortProperty() throws Exception {
+        mockMvc.perform(get("/api/v1/users/contacts?sort=invalidField")
+                        .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andReturn();
+    }
+
     private void registerUser(UUID userId, RegisterRequest request) throws Exception {
         when(keycloakService.register(any(UserRepresentation.class))).thenReturn(
                 Response.created(URI.create("/" + userId)).build()
