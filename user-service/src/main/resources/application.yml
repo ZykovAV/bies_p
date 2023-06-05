@@ -4,6 +4,7 @@ application:
     - USER
 # Server configuration
 server:
+  port: 8081
   error:
     whitelabel:
       enabled: true
