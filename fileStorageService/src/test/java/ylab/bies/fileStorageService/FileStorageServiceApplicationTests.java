@@ -16,7 +16,9 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.util.UriComponentsBuilder;
 import ylab.bies.fileStorageService.entity.FileModel;
 import ylab.bies.fileStorageService.exception.OperationFailedException;
 import ylab.bies.fileStorageService.service.FileService;
@@ -39,6 +41,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FileStorageServiceApplicationTests {
 
   private final String url = "/api/v1/files";
+  private final String filesByIdeaEndpoint = "/by-idea/{idea_id}";
+  private final String downloadFileEndpoint = "/{file_id}";
+  private final String deleteFileEndpoint = "/{file_id}";
 
   @Autowired
   private MockMvc mockMvc;
@@ -73,11 +78,7 @@ class FileStorageServiceApplicationTests {
   @Test
   void shouldSaveFileAndReturnStatus201() throws Exception {
     ideaId = 999L;
-    mockMvc.perform(MockMvcRequestBuilders
-                    .multipart(HttpMethod.POST, url)
-                    .file(mockMultipartFile)
-                    .param("idea_id", ideaId.toString())
-                    .with(jwt()))
+    mockMvcPerformPostToSaveFile()
             .andDo(print())
             .andExpect(status().isCreated());
 
@@ -90,6 +91,14 @@ class FileStorageServiceApplicationTests {
     assertEquals(mockMultipartFile.getOriginalFilename(), fileModelSavedToDB.getFileName());
     assertEquals(mockMultipartFile.getContentType(), fileModelSavedToDB.getContentType());
     assertEquals(mockMultipartFile.getSize(), fileModelSavedToDB.getFileSize());
+  }
+
+  ResultActions mockMvcPerformPostToSaveFile() throws Exception {
+    return mockMvc.perform(MockMvcRequestBuilders
+            .multipart(HttpMethod.POST, url)
+            .file(mockMultipartFile)
+            .param("idea_id", ideaId.toString())
+            .with(jwt()));
   }
 
   private UUID getUUIDWithArgumentCaptor() throws Exception {
@@ -105,18 +114,12 @@ class FileStorageServiceApplicationTests {
     ideaId = 998L;
     when(ideaServiceClient.validateIdeaOwner(anyLong())).thenReturn(false);
 
-    mockMvc.perform(MockMvcRequestBuilders
-                    .multipart(HttpMethod.POST, url)
-                    .file(mockMultipartFile)
-                    .param("idea_id", ideaId.toString())
-                    .with(jwt()))
+    mockMvcPerformPostToSaveFile()
             .andDo(print())
             .andExpect(status().isForbidden());
 
     //make sure nothing was saved to db
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andDo(print())
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
@@ -125,23 +128,26 @@ class FileStorageServiceApplicationTests {
     verify(minioService, never()).putObject(anyString(), anyString(), any(MockMultipartFile.class));
   }
 
+  ResultActions mockMvcPerformGetFilesByIdeaId() throws Exception {
+    return mockMvc.perform(MockMvcRequestBuilders
+            .get(UriComponentsBuilder.newInstance()
+                    .path(url)
+                    .path(filesByIdeaEndpoint)
+                    .build(ideaId))
+            .with(jwt()));
+  }
+
   @Test
   void shouldNotSaveToDbAndReturnStatus500WhenS3Throws() throws Exception {
     ideaId = 997L;
     doThrow(ServerException.class).when(minioService).putObject(anyString(), anyString(), any(MockMultipartFile.class));
 
-    mockMvc.perform(MockMvcRequestBuilders
-                    .multipart(HttpMethod.POST, url)
-                    .file(mockMultipartFile)
-                    .param("idea_id", ideaId.toString())
-                    .with(jwt()))
+    mockMvcPerformPostToSaveFile()
             .andDo(print())
             .andExpect(status().isInternalServerError());
 
     //make sure db transaction is reverted
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andDo(print())
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
@@ -154,9 +160,7 @@ class FileStorageServiceApplicationTests {
   void shouldReturnListOfFilesForIdeaId() throws Exception {
     ideaId = 999L;
 
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andDo(print())
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
@@ -168,9 +172,7 @@ class FileStorageServiceApplicationTests {
   void shouldReturnEmptyListOfFilesForIdeaWithoutFiles() throws Exception {
     ideaId = 111L;
 
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andDo(print())
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
@@ -182,17 +184,11 @@ class FileStorageServiceApplicationTests {
   void shouldRemoveFileAndReturnStatus200() throws Exception {
     //put file for removal
     ideaId = 555L;
-    mockMvc.perform(MockMvcRequestBuilders
-                    .multipart(HttpMethod.POST, url)
-                    .file(mockMultipartFile)
-                    .param("idea_id", ideaId.toString())
-                    .with(jwt()))
+    mockMvcPerformPostToSaveFile()
             .andExpect(status().isCreated());
 
     //make sure file is there
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
             .andExpect(jsonPath("$.files").isArray())
@@ -202,26 +198,29 @@ class FileStorageServiceApplicationTests {
     UUID fileUUID = getUUIDWithArgumentCaptor();
 
     //remove file
-    mockMvc.perform(MockMvcRequestBuilders
-                    .delete(url + "/" + fileUUID)
-                    .with(jwt()))
+    mockMvcPerformDeleteByFileId(fileUUID)
             .andExpect(status().isNoContent());
 
     //make sure file is not there anymore
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andDo(print())
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
             .andExpect(jsonPath("$.files", hasSize(0)));
   }
 
+  ResultActions mockMvcPerformDeleteByFileId(UUID fileUUID) throws Exception {
+    return mockMvc.perform(MockMvcRequestBuilders
+            .delete(UriComponentsBuilder.newInstance()
+                    .path(url)
+                    .path(deleteFileEndpoint)
+                    .build(fileUUID))
+            .with(jwt()));
+  }
+
   @Test
   void shouldReturnStatus404WhenRemoveWithWrongUUID() throws Exception {
-    mockMvc.perform(MockMvcRequestBuilders
-                    .delete(url + "/" + UUID.randomUUID())
-                    .with(jwt()))
+    mockMvcPerformDeleteByFileId(UUID.randomUUID())
             .andExpect(status().isNotFound());
   }
 
@@ -231,17 +230,11 @@ class FileStorageServiceApplicationTests {
 
     //put file for removal
     ideaId = 556L;
-    mockMvc.perform(MockMvcRequestBuilders
-                    .multipart(HttpMethod.POST, url)
-                    .file(mockMultipartFile)
-                    .param("idea_id", ideaId.toString())
-                    .with(jwt()))
+    mockMvcPerformPostToSaveFile()
             .andExpect(status().isCreated());
 
     //make sure file is there
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
             .andExpect(jsonPath("$.files").isArray())
@@ -251,15 +244,11 @@ class FileStorageServiceApplicationTests {
     UUID fileUUID = getUUIDWithArgumentCaptor();
 
     //try to remove file
-    mockMvc.perform(MockMvcRequestBuilders
-                    .delete(url + "/" + fileUUID)
-                    .with(jwt()))
+    mockMvcPerformDeleteByFileId(fileUUID)
             .andExpect(status().isInternalServerError());
 
     //make sure transaction is reverted and file is still in db
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/by-idea/" + ideaId)
-                    .with(jwt()))
+    mockMvcPerformGetFilesByIdeaId()
             .andDo(print())
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ideaId").value(ideaId))
@@ -272,16 +261,12 @@ class FileStorageServiceApplicationTests {
     when(minioService.getObject(anyString(), anyString(), anyLong())).thenReturn(data);
 
     //post file to be downloaded
-    mockMvc.perform(MockMvcRequestBuilders
-                    .multipart(HttpMethod.POST, url)
-                    .file(mockMultipartFile)
-                    .param("idea_id", ideaId.toString()))
+    mockMvcPerformPostToSaveFile()
             .andExpect(status().isCreated());
 
     UUID fileUUID = getUUIDWithArgumentCaptor();
     //download file
-    MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/" + fileUUID))
+    MvcResult result = mockMvcPerformDownloadFile(fileUUID)
             .andDo(print())
             .andExpect(status().isOk())
             .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\""))
@@ -289,14 +274,23 @@ class FileStorageServiceApplicationTests {
     assertArrayEquals(data, result.getResponse().getContentAsByteArray());
   }
 
+  private ResultActions mockMvcPerformDownloadFile(UUID fileUUID) throws Exception {
+    return mockMvc.perform(MockMvcRequestBuilders
+            .get(UriComponentsBuilder.newInstance()
+                    .path(url)
+                    .path(downloadFileEndpoint)
+                    .build(fileUUID))
+            .with(jwt()));
+  }
+
+
   @Test
   void shouldReturnStatus404WhenGetWithWrongFileId() throws Exception {
     ideaId = 221L;
     when(minioService.getObject(anyString(), anyString(), anyLong())).thenReturn(data);
 
     UUID fileUUID = UUID.randomUUID();
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/" + fileUUID))
+    mockMvcPerformDownloadFile(fileUUID)
             .andDo(print())
             .andExpect(status().isNotFound());
   }
@@ -307,16 +301,12 @@ class FileStorageServiceApplicationTests {
     when(minioService.getObject(anyString(), anyString(), anyLong())).thenThrow(OperationFailedException.class);
 
     //post file to be downloaded
-    mockMvc.perform(MockMvcRequestBuilders
-                    .multipart(HttpMethod.POST, url)
-                    .file(mockMultipartFile)
-                    .param("idea_id", ideaId.toString()))
+    mockMvcPerformPostToSaveFile()
             .andExpect(status().isCreated());
 
     UUID fileUUID = getUUIDWithArgumentCaptor();
     //download file
-    mockMvc.perform(MockMvcRequestBuilders
-                    .get(url + "/" + fileUUID))
+    mockMvcPerformDownloadFile(fileUUID)
             .andDo(print())
             .andExpect(status().isInternalServerError());
   }

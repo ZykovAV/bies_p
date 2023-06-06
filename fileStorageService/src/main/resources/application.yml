@@ -45,4 +45,4 @@ s3:
 
 idea-service:
   base-url: http://localhost:8080/api/v1/ideas
-  validate-idea-owner-endpoint: /%s/is-author
+  validate-idea-owner-endpoint: /{ideaId}/is-author

@@ -27,7 +27,7 @@ public class IdeaServiceClientImpl implements IdeaServiceClient {
     try {
       return webClientBuilder.build()
               .get()
-              .uri(String.format(ideaServiceConfig.getValidateIdeaOwnerEndpoint(), ideaId))
+              .uri(ideaServiceConfig.getValidateIdeaOwnerEndpoint(), ideaId)
               .headers(h -> h.setBearerAuth(accessTokenManager.getJwtFromContext().getTokenValue()))
               .retrieve()
               .bodyToMono(Boolean.class)
