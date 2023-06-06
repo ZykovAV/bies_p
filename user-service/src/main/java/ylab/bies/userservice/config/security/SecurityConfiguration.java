@@ -13,7 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-    private final JwtAuthConverter jwtAuthConverter;
+    private final KeycloakJwtAuthConverter keycloakJwtAuthConverter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -32,7 +32,7 @@ public class SecurityConfiguration {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .oauth2ResourceServer().jwt()
-                .jwtAuthenticationConverter(jwtAuthConverter);
+                .jwtAuthenticationConverter(keycloakJwtAuthConverter);
         return http.build();
     }
 }

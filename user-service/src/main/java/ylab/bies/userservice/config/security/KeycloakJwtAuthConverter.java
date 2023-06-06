@@ -1,7 +1,7 @@
 package ylab.bies.userservice.config.security;
 
+import lombok.NonNull;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
-    private static final String CLAIM_REALM_ACCESS = "realm_access";
-    private static final String CLAIM_ROLES = "roles";
+public class KeycloakJwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+    private static final String REALM_ACCESS_CLAIM = "realm_access";
+    private static final String ROLES_CLAIM = "roles";
     private static final String ROLE_PREFIX = "ROLE_";
     private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
 
@@ -34,10 +34,10 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
 
     @SuppressWarnings("unchecked")
     private Collection<? extends GrantedAuthority> extractResourceRoles(Jwt jwt) {
-        Map<String, Object> resourceAccess = jwt.getClaim(CLAIM_REALM_ACCESS);
+        Map<String, Object> resourceAccess = jwt.getClaim(REALM_ACCESS_CLAIM);
         Collection<String> resourceRoles;
         if (resourceAccess == null
-                || (resourceRoles = (Collection<String>) resourceAccess.get(CLAIM_ROLES)) == null) {
+                || (resourceRoles = (Collection<String>) resourceAccess.get(ROLES_CLAIM)) == null) {
             return Collections.emptySet();
         }
         return resourceRoles.stream()
