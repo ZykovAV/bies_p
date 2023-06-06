@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface FileService {
 
-  void addFile(Long ideaId, MultipartFile file, String bearerToken);
+  void addFile(Long ideaId, MultipartFile file);
 
   FileListByIdeaDto getFileListByIdeaId(Long ideaId);
 

@@ -22,9 +22,14 @@ spring:
       max-request-size: 500MB
       max-file-size: 500MB
       file-size-threshold: 2MB
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/bies-realm
 
 server:
-  port: 8080
+  port: 8082
   error:
     whitelabel:
       enabled: true
@@ -33,8 +38,11 @@ server:
     include-exception: false
 
 s3:
-  #To be updated
   url: http://127.0.0.1:9000
-  login: minioadmin
-  password: minioadmin
+  login: admin_user
+  password: admin_password
   idea-files-bucket: business-idea-files
+
+idea-service:
+  base-url: http://localhost:8080/api/v1/ideas
+  validate-idea-owner-endpoint: /{ideaId}/is-author

@@ -2,6 +2,7 @@ package ylab.bies.fileStorageService.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "api/v1/files")
+@SecurityRequirement(name = "Bearer Token")
 @RequiredArgsConstructor
 @Slf4j
 public class FileController {
@@ -54,6 +56,7 @@ public class FileController {
    * But the rest of the response is the same (status, content type, body). Browsers typically would open such files
    * inline if supported, or else download it using file id as a file name and trying to resolve content type into
    * file extension.
+   *
    * @param fileId - the uuid of the file
    * @return byte[] representation of the file
    */
@@ -96,9 +99,7 @@ public class FileController {
   public ResponseEntity<Void> saveFile(@RequestParam("idea_id") Long ideaId,
                                        @RequestParam MultipartFile file) {
     log.info("File received: " + file.getOriginalFilename());
-    //TODO: token logic to be updated
-    String dummyToken = "test";
-    fileService.addFile(ideaId, file, dummyToken);
+    fileService.addFile(ideaId, file);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
