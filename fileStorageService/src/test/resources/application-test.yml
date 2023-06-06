@@ -1,16 +1,12 @@
 spring:
-  liquibase:
-    enabled: true
   datasource:
-    url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1
-    username: sa
-    password: sa
-    driver-class-name: org.h2.Driver
-  h2:
-    console:
-      enabled: true
+    url: jdbc:tc:postgresql:15.2://filestorage_test_db
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
   jpa:
     hibernate:
-      ddl-auto: none
-
+      ddl-auto: update
+      show-sql: true
+      database: postgresql
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
 

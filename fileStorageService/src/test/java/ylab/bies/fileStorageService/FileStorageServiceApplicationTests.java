@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import ylab.bies.fileStorageService.entity.FileModel;
 import ylab.bies.fileStorageService.exception.OperationFailedException;
 import ylab.bies.fileStorageService.service.FileService;
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
 @ActiveProfiles("test")
 class FileStorageServiceApplicationTests {
 
