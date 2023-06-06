@@ -22,7 +22,7 @@ public interface IdeaService {
 
     Page<IdeaResponseDto> getAllIdeas(Pageable pageable);
 
-    Page<IdeaDraftResponseDto> getAllUsersDrafts(Pageable pageable);
+    Page<IdeaResponseDto> getAllUsersIdeas(Pageable pageable);
 
     IdeaResponseDto updateIdea(Long id, IdeaRequestDto editRequest);
 }

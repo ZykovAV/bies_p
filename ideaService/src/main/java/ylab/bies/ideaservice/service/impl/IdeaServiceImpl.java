@@ -113,11 +113,11 @@ public class IdeaServiceImpl implements IdeaService {
     }
 
     @Transactional(readOnly = true)
-    public Page<IdeaDraftResponseDto> getAllUsersDrafts(Pageable pageable) {
+    public Page<IdeaResponseDto> getAllUsersIdeas(Pageable pageable) {
         UUID userId = tokenManager.getUserIdFromToken();
-        Page<Idea> drafts = ideaRepository.findByStatusAndUserId(DRAFT.getValue(), userId, pageable);
-        log.info("List all user's drafts: {}", drafts);
-        Page<IdeaDraftResponseDto> listDto = drafts.map(ideaMapper::ideaEntityToIdeaDraftResponseDto);
+        Page<Idea> drafts = ideaRepository.findAllByUserIdOrderByRatingDesc(userId, pageable);
+        log.info("List all user's ideas: {}", drafts);
+        Page<IdeaResponseDto> listDto = drafts.map(ideaMapper::ideaEntityToIdeaResponseDto);
         return listDto;
     }
 

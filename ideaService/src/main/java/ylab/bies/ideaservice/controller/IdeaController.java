@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,20 +25,21 @@ import javax.validation.constraints.NotNull;
 
 
 @RestController
-@Tag(name = "Idea Controller", description = "REST operations with ideas")
 @RequestMapping(value = "/api/v1/ideas")
+@SecurityRequirement(name = "Bearer Token")
+@Tag(name = "Idea Controller", description = "REST operations with ideas")
 @RequiredArgsConstructor
 @Slf4j
 public class IdeaController {
 
     private final IdeaService ideaService;
 
+    @Operation(summary = "Create a new draft idea", responses = {
+            @ApiResponse(responseCode = "201", description = "Draft idea created",
+                    content = @Content(schema = @Schema(implementation = IdeaDraftResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
     @PostMapping(value = "/draft")
-    @Operation(summary = "Request for a draft idea",
-            responses =
-                    {@ApiResponse(description = "draft idea",
-                            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = IdeaDraftResponseDto.class)))})
     public ResponseEntity<IdeaDraftResponseDto> createDraftIdea(@Valid @RequestBody IdeaDraftRequestDto request) {
         IdeaDraftResponseDto response = ideaService.createDraftIdea(request);
         log.info("Response with created idea: {}", response);
@@ -45,47 +47,69 @@ public class IdeaController {
     }
 
 
+    @Operation(summary = "Get idea by ID", responses = {
+            @ApiResponse(responseCode = "200", description = "Found idea",
+                    content = @Content(schema = @Schema(implementation = IdeaResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Idea not found")
+    })
     @GetMapping(value = "/{id}")
-    @Operation(summary = "Request for a info about idea")
     public ResponseEntity<IdeaResponseDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(ideaService.findById(id), HttpStatus.OK);
     }
 
 
+    @Operation(summary = "Change idea status", responses = {
+            @ApiResponse(responseCode = "200", description = "Status changed"),
+            @ApiResponse(responseCode = "404", description = "Idea not found")
+    })
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Change status of idea")
     public ResponseEntity<HttpStatus> changeStatus(@PathVariable Long id, @RequestParam Integer statusId) {
         ideaService.changeStatus(id, statusId);
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
+
+    @Operation(summary = "Like an idea", responses = {
+            @ApiResponse(responseCode = "200", description = "Idea liked"),
+            @ApiResponse(responseCode = "404", description = "Idea not found")
+    })
     @PatchMapping("/{id}/like")
-    @Operation(summary = "Like idea")
     public ResponseEntity<HttpStatus> like(@PathVariable Long id) {
         ideaService.rate(id, true);
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
+
+    @Operation(summary = "Dislike an idea", responses = {
+            @ApiResponse(responseCode = "200", description = "Idea disliked"),
+            @ApiResponse(responseCode = "404", description = "Idea not found")
+    })
     @PatchMapping("/{id}/dislike")
-    @Operation(summary = "Dislike idea")
     public ResponseEntity<HttpStatus> dislike(@PathVariable Long id) {
         ideaService.rate(id, false);
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
+
+    @Operation(summary = "Get all ideas", responses = {
+            @ApiResponse(responseCode = "200", description = "Success",
+                    content = @Content(schema = @Schema(implementation = Page.class)))
+    })
     @GetMapping
-    @Operation(summary = "Getting a list of ideas", description = "List of all users ideas")
     public ResponseEntity<Page<IdeaResponseDto>> getAllIdeas(@NotNull final Pageable pageable) {
         Page<IdeaResponseDto> ideas = ideaService.getAllIdeas(pageable);
         log.info(String.format("Ideas %s received successfully", ideas));
         return new ResponseEntity<>(ideas, HttpStatus.OK);
     }
 
+
+    @Operation(summary = "Update an idea", responses = {
+            @ApiResponse(responseCode = "200", description = "Idea updated",
+                    content = @Content(schema = @Schema(implementation = IdeaResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "404", description = "Idea not found")
+    })
     @PutMapping("/{id}")
-    @Operation(summary = "Saving or updating idea",
-            responses = {@ApiResponse(description = "Updated Idea",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = IdeaResponseDto.class)))})
     public ResponseEntity<IdeaResponseDto> updateIdea(@Valid @RequestBody IdeaRequestDto editRequest, @PathVariable Long id) {
         IdeaResponseDto updatedIdea = ideaService.updateIdea(id, editRequest);
         log.info("Idea updated successfully");
@@ -93,15 +117,15 @@ public class IdeaController {
     }
 
 
-    @GetMapping(value = "/drafts")
-    @Operation(summary = "Getting a list of drafts",
-            responses =
-                    {@ApiResponse(description = "List of all users drafts",
-                            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = Page.class)))})
-    public ResponseEntity<Page<IdeaDraftResponseDto>> getAllUsersDrafts(@NotNull final Pageable pageable) {
-        Page<IdeaDraftResponseDto> drafts = ideaService.getAllUsersDrafts(pageable);
-        log.info(String.format(" User's drafts %s received successfully", drafts));
-        return new ResponseEntity<>(drafts, HttpStatus.OK);
+
+    @Operation(summary = "Get all user's ideas", responses = {
+            @ApiResponse(responseCode = "200", description = "Success",
+                    content = @Content(schema = @Schema(implementation = Page.class)))
+    })
+    @GetMapping(value = "/my")
+    public ResponseEntity<Page<IdeaResponseDto>> getAllUsersIdeas(@NotNull final Pageable pageable) {
+        Page<IdeaResponseDto> ideas = ideaService.getAllUsersIdeas(pageable);
+        log.info(String.format(" User's ideas %s received successfully", ideas));
+        return new ResponseEntity<>(ideas, HttpStatus.OK);
     }
 }

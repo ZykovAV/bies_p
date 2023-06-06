@@ -288,44 +288,42 @@ public class IdeaControllerTest {
 
 
     /**
-     *  GetAllUsersDrafts tests
+     *  GetAllUsersIdeas tests
      */
 
     @Test
-    @DisplayName("Get All user's drafts. Should be successful.")
-    public void testGetAllUsersDrafts_successAndReturns200() throws Exception {
+    @DisplayName("Get All user's ideas. Should be successful.")
+    public void testGetAllUsersIdeas_successAndReturns200() throws Exception {
 
-        dataGenerationDraftOne();
-        dataGenerationDraftTwo();
+        dataGenerationForGetAllIdeas();
 
-        List<IdeaDraftResponseDto> ideas = Arrays.asList(
-                new IdeaDraftResponseDto(1L, "Draft Idea", "Draft Idea text"),
-                new IdeaDraftResponseDto(2L, "Draft Idea2", "Draft Idea text2")
+        List<IdeaResponseDto> ideas = Arrays.asList(
+                new IdeaResponseDto(1L, "Idea", "Idea test text", 0, USER_ID, 2, null),
+                new IdeaResponseDto(2L, "Idea 2", "Idea test text2", 0, USER_ID, 3, null)
         );
-        Page<IdeaDraftResponseDto> testPageIdeas = new PageImpl<>(ideas);
-
-        mockMvc.perform(get("/api/v1/ideas/drafts")
+        Page<IdeaResponseDto> testPageIdeas = new PageImpl<>(ideas);
+        mockMvc.perform(get("/api/v1/ideas/my")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
-                        .param("page", "0")
-                        .param("size", "5")
                         .content(objectMapper.writeValueAsString(testPageIdeas))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").exists())
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[0].id").value(1))
-                .andExpect(jsonPath("$.content[0].name").value("Draft Idea"))
-                .andExpect(jsonPath("$.content[0].text").value("Draft Idea text"));
+                .andExpect(jsonPath("$.content[0].name").value("Idea"))
+                .andExpect(jsonPath("$.content[0].text").value("Idea test text"))
+                .andExpect(jsonPath("$.content[0].rating").value(0))
+                .andExpect(jsonPath("$.content[0].userId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$.content[0].status").value(2));
     }
 
     @Test
-    @DisplayName("Get All user's drafts. Returning a list without drafts.")
-    public void testGetAllUsersDrafts_returnsListWithoutDrafts() throws Exception {
-        List<IdeaDraftResponseDto> testList = new ArrayList<>();
-        Page<IdeaDraftResponseDto> testPage = new PageImpl<>(testList); //emptyPage
-
-        mockMvc.perform(get("/api/v1/ideas/drafts")
+    @DisplayName("Get All user's ideas. Returning a list without ideas.")
+    public void testGetAllUsersIdeas_returnsListWithoutIdeas() throws Exception {
+        List<IdeaResponseDto> testList = new ArrayList<>();
+        Page<IdeaResponseDto> testPage = new PageImpl<>(testList); //emptyPage
+        mockMvc.perform(get("/api/v1/ideas/my")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .content(objectMapper.writeValueAsString(testPage))
@@ -335,10 +333,10 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Get All user's drafts. Invalid pagination. Returning Ok - 200.")
-    public void testGetAllUsersDrafts_successWithInvalidPaginationAndReturns200() throws Exception {
+    @DisplayName("Get All user's ideas. Invalid pagination. Returning Ok - 200.")
+    public void testGetAllUsersIdeas_successWithInvalidPaginationAndReturns200() throws Exception {
 
-        mockMvc.perform(get("/api/v1/ideas/drafts")
+        mockMvc.perform(get("/api/v1/ideas/my")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID))))
                         .param("page", "-3")
@@ -349,9 +347,9 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Get All user's drafts. Returns 401 Unauthorized.")
-    public void testGetAllUsersDrafts_returnsUnauthorized401() throws Exception {
-        mockMvc.perform(get("/api/v1/ideas/drafts")
+    @DisplayName("Get All user's ideas. Returns 401 Unauthorized.")
+    public void testGetAllUsersIdeas_returnsUnauthorized401() throws Exception {
+        mockMvc.perform(get("/api/v1/ideas/my")
                         .param("page", "0")
                         .param("size", "5")
                         .contentType(MediaType.APPLICATION_JSON))
