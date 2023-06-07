@@ -141,7 +141,7 @@ public class UserAdminControllerTest {
                         .with(jwt().authorities(AuthorityUtils.createAuthorityList(ADMIN_AUTHORITY)))
                 )
                 .andDo(print())
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

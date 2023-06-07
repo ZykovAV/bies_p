@@ -40,6 +40,7 @@ public class UserServiceImpl implements UserService {
     private static final String USER_NOT_FOUND_MESSAGE = "User with ID %s not found";
     private static final String USER_ALREADY_HAS_ROLE_MESSAGE = "User with ID: %s already has role: %s";
     private static final String ROLE_NOT_FOUND_MESSAGE = "Role with name: %s not found";
+    private static final String INVALID_USER_ID_MESSAGE = "Invalid user ID";
     private final ApplicationConfiguration configuration;
     private final UserRepository repository;
     private final RoleRepository roleRepository;
@@ -118,15 +119,11 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public ContactsResponse getContactsById(String id) {
-        try {
-            UUID userId = UUID.fromString(id);
-            UserProjection user = repository.findProjectedById(userId).orElseThrow(() ->
-                    logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)))
-            );
-            return mapper.toContactsResponse(user);
-        } catch (IllegalArgumentException e) {
-            throw logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)));
-        }
+        UUID userId = getUserIdFromString(id);
+        UserProjection user = repository.findProjectedById(userId).orElseThrow(() ->
+                logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)))
+        );
+        return mapper.toContactsResponse(user);
     }
 
     @Override
@@ -143,13 +140,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void assignRole(String id, String roleName) {
-        UUID userId;
-        try {
-            userId = UUID.fromString(id);
-        } catch (IllegalArgumentException e) {
-            throw logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)));
-        }
-
+        UUID userId = getUserIdFromString(id);
         User user = getUserById(userId);
 
         if (isUserHasRole(user, roleName)) {
@@ -210,5 +201,13 @@ public class UserServiceImpl implements UserService {
                 .stream()
                 .map(Role::getName)
                 .anyMatch(name -> name.equals(roleName));
+    }
+
+    private UUID getUserIdFromString(String id) {
+        try {
+            return UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            throw logAndGetException(new InvalidUserIdException(INVALID_USER_ID_MESSAGE));
+        }
     }
 }

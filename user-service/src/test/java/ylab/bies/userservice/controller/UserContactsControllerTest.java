@@ -149,7 +149,7 @@ public class UserContactsControllerTest {
                         .with(jwt().authorities(AuthorityUtils.createAuthorityList(SERVICE_AUTHORITY)))
                 )
                 .andDo(print())
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
