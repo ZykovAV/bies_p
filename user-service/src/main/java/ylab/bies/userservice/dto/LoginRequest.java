@@ -8,7 +8,6 @@ import javax.validation.constraints.NotBlank;
 
 @Getter
 @Setter
-@ToString
 public class LoginRequest {
     @NotBlank(message = "Password can't be null or empty")
     private String username;

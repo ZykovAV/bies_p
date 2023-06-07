@@ -5,8 +5,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ylab.bies.userservice.entity.Role;
 
 import javax.validation.constraints.NotBlank;
+import java.util.Optional;
 
 @Transactional(readOnly = true)
 public interface RoleRepository extends JpaRepository<Role, Long> {
-    Role findByName(@NotBlank String name);
+    Optional<Role> findByName(@NotBlank String name);
 }

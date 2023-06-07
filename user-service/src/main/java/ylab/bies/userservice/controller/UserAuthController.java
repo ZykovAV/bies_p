@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +25,7 @@ public class UserAuthController {
     private final UserService service;
 
     @PostMapping("/register")
+    @PreAuthorize("isAnonymous()")
     public ResponseEntity<UserResponse> register(@RequestBody @Valid RegisterRequest request) {
         log.info("Registering a new user: {}", request);
         UserResponse userResponse = service.register(request);
@@ -32,6 +34,7 @@ public class UserAuthController {
     }
 
     @PostMapping("/login")
+    @PreAuthorize("isAnonymous()")
     public ResponseEntity<AccessTokenResponse> login(@RequestBody @Valid LoginRequest request) {
         log.info("Logining a user: \"{}\"", request.getUsername());
         AccessTokenResponse tokenResponse = service.login(request);

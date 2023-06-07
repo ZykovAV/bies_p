@@ -25,7 +25,10 @@ import ylab.bies.userservice.util.AccessTokenManager;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.UUID;
+
+import static java.lang.String.format;
 
 @Service
 @RequiredArgsConstructor
@@ -35,10 +38,8 @@ public class UserServiceImpl implements UserService {
     private static final String USER_ALREADY_EXISTS_MESSAGE = "User with that username or email is already exists";
     private static final String INVALID_OLD_PASSWORD_MESSAGE = "Invalid old password";
     private static final String USER_NOT_FOUND_MESSAGE = "User with ID %s not found";
-    private static final String USER_NOT_FOUND_LOG_MESSAGE = "Failed to get a user's contact. User with ID {} not found";
-    private static final String FAILED_TO_LOGIN_MESSAGE = "Failed to login a user";
-    private static final String FAILED_TO_REGISTER_MESSAGE = "Failed to register a new User";
-    private static final String FAILED_CHANGE_PASSWORD_MESSAGE = "Failed to change password";
+    private static final String USER_ALREADY_HAS_ROLE_MESSAGE = "User with ID: %s already has role: %s";
+    private static final String ROLE_NOT_FOUND_MESSAGE = "Role with name: %s not found";
     private final ApplicationConfiguration configuration;
     private final UserRepository repository;
     private final RoleRepository roleRepository;
@@ -69,8 +70,7 @@ public class UserServiceImpl implements UserService {
         try {
             return keycloakService.getToken(request.getUsername(), request.getPassword());
         } catch (NotAuthorizedException e) {
-            log.info("{}. {}", FAILED_TO_LOGIN_MESSAGE, INVALID_CREDENTIALS_MESSAGE);
-            throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
+            throw logAndGetException(new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE));
         }
     }
 
@@ -99,6 +99,7 @@ public class UserServiceImpl implements UserService {
         user.setLastName(request.getLastName());
         user.setMiddleName(request.getMiddleName());
         repository.save(user);
+
         return mapper.toChangeFullNameResponse(user);
     }
 
@@ -110,8 +111,7 @@ public class UserServiceImpl implements UserService {
             UUID userId = tokenManager.getUserIdFromToken();
             keycloakService.changePassword(String.valueOf(userId), request.getNewPassword());
         } catch (NotAuthorizedException e) {
-            log.info("{}. {}", FAILED_CHANGE_PASSWORD_MESSAGE, INVALID_OLD_PASSWORD_MESSAGE);
-            throw new InvalidOldPasswordException(INVALID_OLD_PASSWORD_MESSAGE);
+            throw logAndGetException(new InvalidOldPasswordException(INVALID_OLD_PASSWORD_MESSAGE));
         }
     }
 
@@ -120,10 +120,12 @@ public class UserServiceImpl implements UserService {
     public ContactsResponse getContactsById(String id) {
         try {
             UUID userId = UUID.fromString(id);
-            UserProjection user = repository.findProjectedById(userId).orElseThrow(() -> getUserNotFoundException(id));
+            UserProjection user = repository.findProjectedById(userId).orElseThrow(() ->
+                    logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)))
+            );
             return mapper.toContactsResponse(user);
         } catch (IllegalArgumentException e) {
-            throw getUserNotFoundException(id);
+            throw logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)));
         }
     }
 
@@ -134,23 +136,43 @@ public class UserServiceImpl implements UserService {
             Page<UserProjection> userPage = repository.findAllProjectedBy(pageable);
             return mapper.toContactsPageResponse(userPage);
         } catch (PropertyReferenceException e) {
-            throw new InvalidSortPropertyException(e.getMessage());
+            throw logAndGetException(new InvalidSortPropertyException(e.getMessage()));
         }
     }
 
-    private UserNotFoundException getUserNotFoundException(String id) {
-        log.info(USER_NOT_FOUND_LOG_MESSAGE, id);
-        return new UserNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, id));
+    @Override
+    @Transactional
+    public void assignRole(String id, String roleName) {
+        UUID userId;
+        try {
+            userId = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            throw logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)));
+        }
+
+        User user = getUserById(userId);
+
+        if (isUserHasRole(user, roleName)) {
+            throw logAndGetException(
+                    new UserAlreadyHasRoleException(format(USER_ALREADY_HAS_ROLE_MESSAGE, id, roleName))
+            );
+        }
+
+        Role role = getRoleByName(roleName);
+        user.getRoles().add(role);
+        keycloakService.assignRoles(id, Collections.singleton(roleName));
+
+        repository.save(user);
+    }
+
+    private RuntimeException logAndGetException(RuntimeException exception) {
+        log.info("Request failed: {}", exception.getMessage());
+        return exception;
     }
 
     private void handleRegistrationResponse(Response response) {
         if (response.getStatusInfo() == Response.Status.CONFLICT) {
-            log.info("{}. {}", FAILED_TO_REGISTER_MESSAGE, USER_ALREADY_EXISTS_MESSAGE);
-            throw new UserAlreadyExistException(USER_ALREADY_EXISTS_MESSAGE);
-        }
-        if (response.getStatusInfo() != Response.Status.CREATED) {
-            log.info(FAILED_TO_REGISTER_MESSAGE);
-            throw new UserRegistrationException(FAILED_TO_REGISTER_MESSAGE);
+            throw logAndGetException(new UserAlreadyExistException(USER_ALREADY_EXISTS_MESSAGE));
         }
     }
 
@@ -166,8 +188,27 @@ public class UserServiceImpl implements UserService {
 
     private void assignDefaultRoles(User user) {
         for (String userRole : configuration.getUserDefaultRoles()) {
-            Role role = roleRepository.findByName(userRole);
+            Role role = getRoleByName(userRole);
             user.getRoles().add(role);
         }
+    }
+
+    private Role getRoleByName(String name) {
+        return roleRepository.findByName(name).orElseThrow(() ->
+                logAndGetException(new RoleNotFoundException(format(ROLE_NOT_FOUND_MESSAGE, name)))
+        );
+    }
+
+    private User getUserById(UUID id) {
+        return repository.findById(id).orElseThrow(() ->
+                logAndGetException(new UserNotFoundException(format(USER_NOT_FOUND_MESSAGE, id)))
+        );
+    }
+
+    private boolean isUserHasRole(User user, String roleName) {
+        return user.getRoles()
+                .stream()
+                .map(Role::getName)
+                .anyMatch(name -> name.equals(roleName));
     }
 }

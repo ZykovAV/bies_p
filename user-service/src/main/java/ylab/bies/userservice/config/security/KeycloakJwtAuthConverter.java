@@ -2,11 +2,9 @@ package ylab.bies.userservice.config.security;
 
 import lombok.NonNull;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.stereotype.Component;
 
@@ -17,19 +15,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-public class KeycloakJwtAuthConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+public class KeycloakJwtAuthConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
     private static final String REALM_ACCESS_CLAIM = "realm_access";
     private static final String ROLES_CLAIM = "roles";
     private static final String ROLE_PREFIX = "ROLE_";
     private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
 
     @Override
-    public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
-        Collection<GrantedAuthority> authorities = Stream.concat(
+    public Collection<GrantedAuthority> convert(@NonNull Jwt jwt) {
+        return Stream.concat(
                 jwtGrantedAuthoritiesConverter.convert(jwt).stream(),
                 extractResourceRoles(jwt).stream()
         ).collect(Collectors.toSet());
-        return new JwtAuthenticationToken(jwt, authorities);
     }
 
     @SuppressWarnings("unchecked")

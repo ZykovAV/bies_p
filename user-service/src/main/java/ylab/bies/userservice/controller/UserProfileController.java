@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ylab.bies.userservice.dto.ChangeFullNameRequest;
 import ylab.bies.userservice.dto.ChangeFullNameResponse;
@@ -23,6 +24,7 @@ public class UserProfileController {
     private final UserService service;
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     @Operation(security = @SecurityRequirement(name = "Bearer Token"))
     public ResponseEntity<UserResponse> getProfile() {
         log.info("Getting a user profile from token");
@@ -32,6 +34,7 @@ public class UserProfileController {
     }
 
     @PutMapping("/fullName")
+    @PreAuthorize("isAuthenticated()")
     @Operation(security = @SecurityRequirement(name = "Bearer Token"))
     public ResponseEntity<ChangeFullNameResponse> changeName(@RequestBody @Valid ChangeFullNameRequest request) {
         log.info("Changing user's full name by request {}", request);
@@ -41,11 +44,12 @@ public class UserProfileController {
     }
 
     @PutMapping("/password")
+    @PreAuthorize("isAuthenticated()")
     @Operation(security = @SecurityRequirement(name = "Bearer Token"))
     public ResponseEntity<Void> changePassword(@RequestBody @Valid ChangePasswordRequest request) {
         log.info("Changing user's password");
         service.changePassword(request);
         log.info("User successfully changed his password");
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 }
