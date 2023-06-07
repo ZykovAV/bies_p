@@ -31,4 +31,4 @@ databaseChangeLog:
                   name: middle_name
                   type: varchar(255)
                   constraints:
-                    nullable: false
+                    nullable: true
