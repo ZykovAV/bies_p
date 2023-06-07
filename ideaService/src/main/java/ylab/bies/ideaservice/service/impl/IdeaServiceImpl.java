@@ -65,6 +65,7 @@ public class IdeaServiceImpl implements IdeaService {
         return response;
     }
 
+
     @Override
     @Transactional
     public void changeStatus(Long id, Integer status) {
@@ -85,6 +86,7 @@ public class IdeaServiceImpl implements IdeaService {
         kafkaProducerService.sendNotification(notificationDto);
         log.info("Status of idea with id={} has been changed to '{}'", id, newStatus);
     }
+
 
     @Override
     @Transactional
@@ -112,6 +114,7 @@ public class IdeaServiceImpl implements IdeaService {
         return listDto;
     }
 
+
     @Transactional(readOnly = true)
     public Page<IdeaResponseDto> getAllUsersIdeas(Pageable pageable) {
         UUID userId = tokenManager.getUserIdFromToken();
@@ -133,6 +136,7 @@ public class IdeaServiceImpl implements IdeaService {
         log.info("Draft saved: {}", draft);
         return ideaMapper.ideaEntityToIdeaDraftResponseDto(savedDraft);
     }
+
 
     @Transactional
     public IdeaResponseDto updateIdea(Long id, IdeaRequestDto ideaRequestDto) {

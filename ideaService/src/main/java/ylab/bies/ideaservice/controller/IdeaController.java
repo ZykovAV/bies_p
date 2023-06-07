@@ -11,8 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.request.IdeaRequestDto;
@@ -39,6 +39,7 @@ public class IdeaController {
                     content = @Content(schema = @Schema(implementation = IdeaDraftResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(value = "/draft")
     public ResponseEntity<IdeaDraftResponseDto> createDraftIdea(@Valid @RequestBody IdeaDraftRequestDto request) {
         IdeaDraftResponseDto response = ideaService.createDraftIdea(request);
@@ -52,6 +53,7 @@ public class IdeaController {
                     content = @Content(schema = @Schema(implementation = IdeaResponseDto.class))),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
+    @PreAuthorize("isAuthenticated()")
     @GetMapping(value = "/{id}")
     public ResponseEntity<IdeaResponseDto> getById(@PathVariable Long id) {
         return new ResponseEntity<>(ideaService.findById(id), HttpStatus.OK);
@@ -62,6 +64,7 @@ public class IdeaController {
             @ApiResponse(responseCode = "200", description = "Status changed"),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
+    @PreAuthorize("hasRole('EXPERT')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<HttpStatus> changeStatus(@PathVariable Long id, @RequestParam Integer statusId) {
         ideaService.changeStatus(id, statusId);
@@ -73,6 +76,7 @@ public class IdeaController {
             @ApiResponse(responseCode = "200", description = "Idea liked"),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/like")
     public ResponseEntity<HttpStatus> like(@PathVariable Long id) {
         ideaService.rate(id, true);
@@ -84,6 +88,7 @@ public class IdeaController {
             @ApiResponse(responseCode = "200", description = "Idea disliked"),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/dislike")
     public ResponseEntity<HttpStatus> dislike(@PathVariable Long id) {
         ideaService.rate(id, false);
@@ -95,6 +100,7 @@ public class IdeaController {
             @ApiResponse(responseCode = "200", description = "Success",
                     content = @Content(schema = @Schema(implementation = Page.class)))
     })
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     public ResponseEntity<Page<IdeaResponseDto>> getAllIdeas(@NotNull final Pageable pageable) {
         Page<IdeaResponseDto> ideas = ideaService.getAllIdeas(pageable);
@@ -109,6 +115,7 @@ public class IdeaController {
             @ApiResponse(responseCode = "400", description = "Invalid request data"),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     public ResponseEntity<IdeaResponseDto> updateIdea(@Valid @RequestBody IdeaRequestDto editRequest, @PathVariable Long id) {
         IdeaResponseDto updatedIdea = ideaService.updateIdea(id, editRequest);
@@ -122,6 +129,7 @@ public class IdeaController {
             @ApiResponse(responseCode = "200", description = "Success",
                     content = @Content(schema = @Schema(implementation = Page.class)))
     })
+    @PreAuthorize("isAuthenticated()")
     @GetMapping(value = "/my")
     public ResponseEntity<Page<IdeaResponseDto>> getAllUsersIdeas(@NotNull final Pageable pageable) {
         Page<IdeaResponseDto> ideas = ideaService.getAllUsersIdeas(pageable);
