@@ -1,6 +1,7 @@
 package ylab.bies.ideaservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import ylab.bies.ideaservice.entity.Vote;
 import ylab.bies.ideaservice.entity.VotePK;
@@ -20,6 +21,7 @@ public interface VoteRepository extends JpaRepository<Vote, VotePK> {
 
     Vote save(Vote vote);
 
+    @Modifying
     @Query("UPDATE Vote v SET v.isLike=:isLike WHERE v.pk.ideaId=:ideaId AND v.pk.userId=:userId")
-    void changeVote(UUID userId, Long id, boolean isLike);
+    void changeVote(UUID userId, Long ideaId, boolean isLike);
 }

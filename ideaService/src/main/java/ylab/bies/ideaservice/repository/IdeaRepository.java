@@ -22,6 +22,7 @@ public interface IdeaRepository extends JpaRepository<Idea, Long> {
     @Query("SELECT i.status FROM Idea i WHERE i.id=:id")
     Optional<Integer> getStatus(Long id);
 
+    @Modifying
     @Query("UPDATE Idea i SET i.rating=:rating WHERE i.id=:id")
     void updateRating(Long id, int rating);
 

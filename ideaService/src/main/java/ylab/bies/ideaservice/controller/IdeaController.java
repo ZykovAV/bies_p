@@ -62,6 +62,7 @@ public class IdeaController {
 
     @Operation(summary = "Change idea status", responses = {
             @ApiResponse(responseCode = "200", description = "Status changed"),
+            @ApiResponse(responseCode = "304", description = "Status not changed"),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
     @PreAuthorize("hasRole('EXPERT')")
@@ -74,6 +75,7 @@ public class IdeaController {
 
     @Operation(summary = "Like an idea", responses = {
             @ApiResponse(responseCode = "200", description = "Idea liked"),
+            @ApiResponse(responseCode = "304", description = "Like has been rejected"),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
     @PreAuthorize("isAuthenticated()")
@@ -86,6 +88,7 @@ public class IdeaController {
 
     @Operation(summary = "Dislike an idea", responses = {
             @ApiResponse(responseCode = "200", description = "Idea disliked"),
+            @ApiResponse(responseCode = "304", description = "Dislike has been rejected"),
             @ApiResponse(responseCode = "404", description = "Idea not found")
     })
     @PreAuthorize("isAuthenticated()")
@@ -93,6 +96,18 @@ public class IdeaController {
     public ResponseEntity<HttpStatus> dislike(@PathVariable Long id) {
         ideaService.rate(id, false);
         return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+
+    @Operation(summary = "Checking if current user is an author of idea", responses = {
+            @ApiResponse(responseCode = "200", description = "'true' if current user is an author, 'false' - if not",
+                    content = @Content(schema = @Schema(implementation = Boolean.class))),
+            @ApiResponse(responseCode = "404", description = "Idea not found")
+    })
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/is-author")
+    public ResponseEntity<Boolean> isCurrentUserAuthor(@PathVariable Long id) {
+        return ResponseEntity.ok(ideaService.isCurrentUserAuthor(id));
     }
 
 
