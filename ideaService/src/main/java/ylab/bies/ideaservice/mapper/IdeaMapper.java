@@ -11,7 +11,9 @@ import ylab.bies.ideaservice.entity.Idea;
 public interface IdeaMapper {
 
     Idea ideaDraftRequestDtoToIdeaEntity(IdeaDraftRequestDto requestDto);
+
     IdeaDraftResponseDto ideaEntityToIdeaDraftResponseDto(Idea idea);
+
     IdeaResponseDto ideaEntityToIdeaResponseDto(Idea idea);
 
     Idea ideaRequestDtoToIdeaEntity(IdeaRequestDto IdeaRequestDto);

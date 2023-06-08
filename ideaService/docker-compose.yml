@@ -51,13 +51,17 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      IMPORT_FILES: ./imports/bies-realm.json
     command:
       - start-dev
       - --http-port=8180
+      - --import-realm
     ports:
       - "8180:8180"
+    volumes:
+      - ./imports/bies-realm.json:/opt/keycloak/data/import/bies-realm.json
 
-  #Zookeeper for Kafka container
+      #Zookeeper for Kafka container
   zookeeper:
     image: zookeeper:3.8.1
     container_name: zookeeper

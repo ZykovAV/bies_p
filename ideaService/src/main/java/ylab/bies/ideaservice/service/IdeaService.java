@@ -12,15 +12,17 @@ import ylab.bies.ideaservice.dto.response.IdeaResponseDto;
 
 public interface IdeaService {
 
-    IdeaResponseDto findById(String token, Long id);
+    IdeaResponseDto findById(Long id);
 
-    IdeaDraftResponseDto createDraftIdea(String token, IdeaDraftRequestDto request);
+    IdeaDraftResponseDto createDraftIdea(IdeaDraftRequestDto request);
 
     void changeStatus(Long id, Integer status);
 
-    void rate(String token, Long id, boolean isLike);
+    void rate(Long id, boolean isLike);
 
     Page<IdeaResponseDto> getAllIdeas(Pageable pageable);
 
-    IdeaResponseDto updateIdea(String token, Long id, IdeaRequestDto editRequest);
+    Page<IdeaResponseDto> getAllUsersIdeas(Pageable pageable);
+
+    IdeaResponseDto updateIdea(Long id, IdeaRequestDto editRequest);
 }

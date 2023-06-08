@@ -5,6 +5,7 @@ import lombok.*;
 
 @Setter
 @Getter
+@AllArgsConstructor
 public class IdeaDraftResponseDto {
 
     private Long id;
