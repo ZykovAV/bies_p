@@ -16,6 +16,6 @@ public interface IdeaMapper {
 
     IdeaResponseDto ideaEntityToIdeaResponseDto(Idea idea);
 
-    Idea ideaRequestDtoToIdeaEntity(IdeaRequestDto IdeaRequestDto);
+    Idea ideaRequestDtoToIdeaEntity(IdeaRequestDto ideaRequestDto);
 
 }

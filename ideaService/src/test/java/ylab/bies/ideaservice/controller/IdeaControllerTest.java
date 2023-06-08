@@ -215,7 +215,6 @@ public class IdeaControllerTest {
         dataGenerationDraftOne();
 
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
-        requestForUpdate.setId(1L);
         requestForUpdate.setName("Idea for Update");
         requestForUpdate.setText("Idea for Update text");
 
@@ -238,7 +237,6 @@ public class IdeaControllerTest {
         dataGenerationDraftOne();
 
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
-        requestForUpdate.setId(1L);
         requestForUpdate.setName("");  // Invalid data input
         requestForUpdate.setText("Idea for Update text");
 
@@ -257,7 +255,6 @@ public class IdeaControllerTest {
         dataGenerationDraftOne();
 
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
-        requestForUpdate.setId(5L); //   Invalid id
         requestForUpdate.setName("Idea");
         requestForUpdate.setText("Idea for Update text");
 
@@ -276,7 +273,6 @@ public class IdeaControllerTest {
     public void testUpdateIdea_ReturnsUnauthorized401() throws Exception {
         dataGenerationDraftOne();
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
-        requestForUpdate.setId(1L);
         requestForUpdate.setName("Idea");
         requestForUpdate.setText("Idea for Update text");
         mockMvc.perform(put("/api/v1/ideas/1") //invalid request
@@ -801,7 +797,6 @@ public class IdeaControllerTest {
 
         // add Under consideration idea with id=2
         id = 2;
-        requestForUpdate.setId((long) id);
         requestForUpdate.setName("Under consideration idea");
         requestForUpdate.setText("Under consideration text");
         mockMvc.perform(post("/api/v1/ideas/draft")
@@ -822,7 +817,6 @@ public class IdeaControllerTest {
 
         // add Accepted idea with id=3
         id = 3;
-        requestForUpdate.setId((long) id);
         requestForUpdate.setName("Accepted idea");
         requestForUpdate.setText("Accepted text");
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/ideas/draft")
@@ -848,7 +842,6 @@ public class IdeaControllerTest {
 
         // add Rejected idea with id=4
         id = 4;
-        requestForUpdate.setId((long) id);
         requestForUpdate.setName("Rejected idea");
         requestForUpdate.setText("Rejected text");
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/ideas/draft")
@@ -886,7 +879,6 @@ public class IdeaControllerTest {
 
         // add Under consideration idea with id=6
         id = 6;
-        requestForUpdate.setId((long) id);
         requestForUpdate.setName("Under consideration idea");
         requestForUpdate.setText("Under consideration text");
         mockMvc.perform(post("/api/v1/ideas/draft")
@@ -907,7 +899,6 @@ public class IdeaControllerTest {
 
         // add Accepted idea with id=7
         id = 7;
-        requestForUpdate.setId((long) id);
         requestForUpdate.setName("Accepted idea");
         requestForUpdate.setText("Accepted text");
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/ideas/draft")
@@ -933,7 +924,6 @@ public class IdeaControllerTest {
 
         // add Rejected idea with id=8
         id = 8;
-        requestForUpdate.setId((long) id);
         requestForUpdate.setName("Rejected idea");
         requestForUpdate.setText("Rejected text");
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/ideas/draft")
@@ -1012,7 +1002,6 @@ public class IdeaControllerTest {
         request.setText("Draft idea text");
 
         IdeaRequestDto requestForUpdate = new IdeaRequestDto();
-        requestForUpdate.setId(1L);
         requestForUpdate.setName("Idea");
         requestForUpdate.setText("Idea test text");
 
@@ -1046,7 +1035,6 @@ public class IdeaControllerTest {
         request2.setText("Draft idea text2");
 
         IdeaRequestDto requestForUpdate2 = new IdeaRequestDto();
-        requestForUpdate2.setId(2L);
         requestForUpdate2.setName("Idea2");
         requestForUpdate2.setText("Idea test text2");
 
