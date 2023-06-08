@@ -13,7 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-    private final JwtAuthConverter jwtAuthConverter;
+    private final KeycloakJwtAuthConverter keycloakJwtAuthConverter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -24,16 +24,15 @@ public class SecurityConfiguration {
                         ).permitAll()
                         .antMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
                         .antMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll()
-                        .antMatchers(HttpMethod.GET, "/api/v1/users/profile").authenticated()
-                        .antMatchers(HttpMethod.PUT, "/api/v1/users/profile/fullName").authenticated()
-                        .antMatchers(HttpMethod.PUT, "/api/v1/users/profile/password").authenticated()
+                        .antMatchers("/api/v1/users/profile/**").authenticated()
                         .antMatchers(HttpMethod.GET, "/api/v1/users/{id}/contacts").hasRole("SERVICE")
+                        .antMatchers(HttpMethod.GET, "/api/v1/users/contacts").hasRole("SERVICE")
                         .anyRequest().denyAll())
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .oauth2ResourceServer().jwt()
-                .jwtAuthenticationConverter(jwtAuthConverter);
+                .jwtAuthenticationConverter(keycloakJwtAuthConverter);
         return http.build();
     }
 }

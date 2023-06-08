@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static ylab.bies.userservice.controller.UserTestUtil.*;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
@@ -232,8 +232,7 @@ public class UserProfileControllerTest {
     @Test
     void changePassword_EmptyBody() throws Exception {
         mockMvc.perform(put("/api/v1/users/profile/password")
-                        .with(jwt())
-                )
+                        .with(jwt()))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }

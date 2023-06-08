@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ylab.bies.userservice.config.ApplicationConfiguration;
@@ -13,6 +16,7 @@ import ylab.bies.userservice.entity.Role;
 import ylab.bies.userservice.entity.User;
 import ylab.bies.userservice.exception.*;
 import ylab.bies.userservice.mapper.UserMapper;
+import ylab.bies.userservice.projection.UserProjection;
 import ylab.bies.userservice.repository.RoleRepository;
 import ylab.bies.userservice.repository.UserRepository;
 import ylab.bies.userservice.service.KeycloakService;
@@ -54,7 +58,7 @@ public class UserServiceImpl implements UserService {
             keycloakService.assignRoles(String.valueOf(userId), configuration.getUserDefaultRoles());
 
             User user = mapper.toUser(request);
-            user = create(user, userId);
+            user = prepareAndSave(user, userId);
 
             return mapper.toUserResponse(user, keycloakUser);
         }
@@ -100,15 +104,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-        UUID userId = tokenManager.getUserIdFromToken();
         String username = tokenManager.getUsernameFromToken();
         try {
             keycloakService.getToken(username, request.getOldPassword());
+            UUID userId = tokenManager.getUserIdFromToken();
+            keycloakService.changePassword(String.valueOf(userId), request.getNewPassword());
         } catch (NotAuthorizedException e) {
             log.info("{}. {}", FAILED_CHANGE_PASSWORD_MESSAGE, INVALID_OLD_PASSWORD_MESSAGE);
             throw new InvalidOldPasswordException(INVALID_OLD_PASSWORD_MESSAGE);
         }
-        keycloakService.changePassword(String.valueOf(userId), request.getNewPassword());
     }
 
     @Override
@@ -116,10 +120,21 @@ public class UserServiceImpl implements UserService {
     public ContactsResponse getContactsById(String id) {
         try {
             UUID userId = UUID.fromString(id);
-            User user = repository.findById(userId).orElseThrow(() -> getUserNotFoundException(id));
+            UserProjection user = repository.findProjectedById(userId).orElseThrow(() -> getUserNotFoundException(id));
             return mapper.toContactsResponse(user);
         } catch (IllegalArgumentException e) {
             throw getUserNotFoundException(id);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ContactsPageResponse getAllContacts(Pageable pageable) {
+        try {
+            Page<UserProjection> userPage = repository.findAllProjectedBy(pageable);
+            return mapper.toContactsPageResponse(userPage);
+        } catch (PropertyReferenceException e) {
+            throw new InvalidSortPropertyException(e.getMessage());
         }
     }
 
@@ -143,7 +158,7 @@ public class UserServiceImpl implements UserService {
         return UUID.fromString(CreatedResponseUtil.getCreatedId(response));
     }
 
-    private User create(User user, UUID userId) {
+    private User prepareAndSave(User user, UUID userId) {
         user.setId(userId);
         assignDefaultRoles(user);
         return repository.save(user);

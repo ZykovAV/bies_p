@@ -1,6 +1,7 @@
 package ylab.bies.userservice.service;
 
 import org.keycloak.representations.AccessTokenResponse;
+import org.springframework.data.domain.Pageable;
 import ylab.bies.userservice.dto.*;
 
 public interface UserService {
@@ -15,4 +16,6 @@ public interface UserService {
     void changePassword(ChangePasswordRequest request);
 
     ContactsResponse getContactsById(String id);
+
+    ContactsPageResponse getAllContacts(Pageable pageable);
 }

@@ -16,14 +16,20 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ylab.bies.userservice.dto.ContactsPageResponse;
+import ylab.bies.userservice.dto.ContactsResponse;
 import ylab.bies.userservice.dto.RegisterRequest;
 import ylab.bies.userservice.service.KeycloakService;
 
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
@@ -35,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static ylab.bies.userservice.controller.UserTestUtil.getValidRegisterRequest;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
@@ -69,6 +75,43 @@ public class UserContactsControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.email", equalTo(request.getEmail())))
                     .andExpect(jsonPath("$.firstName", equalTo(request.getFirstName())));
+        }
+
+        @Test
+        void getAllUsersContactById_Successfully() throws Exception {
+            RegisterRequest request = getValidRegisterRequest();
+            int pageCount = 10;
+            int pageSize = 10;
+            int numberOfUsers = pageCount * pageSize;
+            List<ContactsResponse> contacts = new ArrayList<>();
+            for (int i = 0; i < numberOfUsers; i++) {
+                request.setEmail("test" + i + "@mail.ru");
+                registerUser(UUID.randomUUID(), request);
+
+                ContactsResponse contactsResponse = new ContactsResponse();
+                contactsResponse.setFirstName(request.getFirstName());
+                contactsResponse.setEmail(request.getEmail());
+                contacts.add(contactsResponse);
+            }
+            for (int i = 0; i < pageCount; i++) {
+                String mvcRequest = String.format(
+                        "/api/v1/users/contacts?page=%s&size=%s&sort=firstName",
+                        i, pageSize
+                );
+                MvcResult result = mockMvc.perform(get(mvcRequest)
+                                .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                        )
+                        .andDo(print())
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+                ContactsPageResponse pageResponse = mapper.readValue(
+                        result.getResponse().getContentAsString(),
+                        ContactsPageResponse.class
+                );
+
+                assertThat(contacts).containsAll(pageResponse.getContacts());
+            }
         }
     }
 
@@ -109,6 +152,32 @@ public class UserContactsControllerTest {
                 )
                 .andDo(print())
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getAllUsersContactById_Unauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/users/contacts"))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getAllUsersContactById_Forbidden_NotAService() throws Exception {
+        mockMvc.perform(get("/api/v1/users/contacts")
+                        .with(jwt())
+                )
+                .andDo(print())
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAllUsersContactById_InvalidSortProperty() throws Exception {
+        mockMvc.perform(get("/api/v1/users/contacts?sort=invalidField")
+                        .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andReturn();
     }
 
     private void registerUser(UUID userId, RegisterRequest request) throws Exception {
