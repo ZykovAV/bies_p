@@ -18,4 +18,6 @@ public interface UserService {
     ContactsResponse getContactsById(String id);
 
     ContactsPageResponse getAllContacts(Pageable pageable);
+
+    void assignRole(String id, String roleName);
 }

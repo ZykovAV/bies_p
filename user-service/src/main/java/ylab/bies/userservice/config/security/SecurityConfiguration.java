@@ -3,14 +3,16 @@ package ylab.bies.userservice.config.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
     private final KeycloakJwtAuthConverter keycloakJwtAuthConverter;
@@ -18,21 +20,17 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorize -> authorize
-                        .antMatchers(
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/swagger-ui/**"
-                        ).permitAll()
-                        .antMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
-                        .antMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll()
-                        .antMatchers("/api/v1/users/profile/**").authenticated()
-                        .antMatchers(HttpMethod.GET, "/api/v1/users/{id}/contacts").hasRole("SERVICE")
-                        .antMatchers(HttpMethod.GET, "/api/v1/users/contacts").hasRole("SERVICE")
-                        .anyRequest().denyAll())
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .oauth2ResourceServer().jwt()
-                .jwtAuthenticationConverter(keycloakJwtAuthConverter);
+                .jwtAuthenticationConverter(jwtAuthenticationConverter());
         return http.build();
+    }
+
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(keycloakJwtAuthConverter);
+        return jwtAuthenticationConverter;
     }
 }

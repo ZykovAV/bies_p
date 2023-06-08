@@ -220,7 +220,7 @@ public class UserProfileControllerTest {
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                 )
                 .andDo(print())
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         verify(keycloakService, times(1)).getToken(username, request.getOldPassword());
         verify(keycloakService, times(1)).changePassword(

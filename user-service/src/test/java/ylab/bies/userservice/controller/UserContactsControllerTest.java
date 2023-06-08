@@ -54,6 +54,7 @@ public class UserContactsControllerTest {
     private JdbcTemplate jdbcTemplate;
     @MockBean
     private KeycloakService keycloakService;
+    private static final String SERVICE_AUTHORITY = "ROLE_SERVICE";
 
     @Nested
     class RollbackTests {
@@ -69,7 +70,7 @@ public class UserContactsControllerTest {
             registerUser(userId, request);
 
             mockMvc.perform(get("/api/v1/users/{id}/contacts", userId)
-                            .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                            .with(jwt().authorities(AuthorityUtils.createAuthorityList(SERVICE_AUTHORITY)))
                     )
                     .andDo(print())
                     .andExpect(status().isOk())
@@ -93,13 +94,10 @@ public class UserContactsControllerTest {
                 contactsResponse.setEmail(request.getEmail());
                 contacts.add(contactsResponse);
             }
-            for (int i = 0; i < pageCount; i++) {
-                String mvcRequest = String.format(
-                        "/api/v1/users/contacts?page=%s&size=%s&sort=firstName",
-                        i, pageSize
-                );
-                MvcResult result = mockMvc.perform(get(mvcRequest)
-                                .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+            for (int currentPage = 0; currentPage < pageCount; currentPage++) {
+                String urlTemplate = "/api/v1/users/contacts?page={page}&size={pageSize}&sort={sort}";
+                MvcResult result = mockMvc.perform(get(urlTemplate, currentPage, pageSize, "firstName")
+                                .with(jwt().authorities(AuthorityUtils.createAuthorityList(SERVICE_AUTHORITY)))
                         )
                         .andDo(print())
                         .andExpect(status().isOk())
@@ -138,7 +136,7 @@ public class UserContactsControllerTest {
         UUID userId = UUID.randomUUID();
 
         mockMvc.perform(get("/api/v1/users/{id}/contacts", userId)
-                        .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                        .with(jwt().authorities(AuthorityUtils.createAuthorityList(SERVICE_AUTHORITY)))
                 )
                 .andDo(print())
                 .andExpect(status().isNotFound());
@@ -148,10 +146,10 @@ public class UserContactsControllerTest {
     @ValueSource(strings = {" ", "1", "asd"})
     void getUserContactById_InvalidUserId(String userId) throws Exception {
         mockMvc.perform(get("/api/v1/users/{id}/contacts", userId)
-                        .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                        .with(jwt().authorities(AuthorityUtils.createAuthorityList(SERVICE_AUTHORITY)))
                 )
                 .andDo(print())
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -162,7 +160,7 @@ public class UserContactsControllerTest {
     }
 
     @Test
-    void getAllUsersContactById_Forbidden_NotAService() throws Exception {
+    void getAllUsersContactById_Forbidden_NotService() throws Exception {
         mockMvc.perform(get("/api/v1/users/contacts")
                         .with(jwt())
                 )
@@ -173,7 +171,7 @@ public class UserContactsControllerTest {
     @Test
     void getAllUsersContactById_InvalidSortProperty() throws Exception {
         mockMvc.perform(get("/api/v1/users/contacts?sort=invalidField")
-                        .with(jwt().authorities(AuthorityUtils.createAuthorityList("ROLE_SERVICE")))
+                        .with(jwt().authorities(AuthorityUtils.createAuthorityList(SERVICE_AUTHORITY)))
                 )
                 .andDo(print())
                 .andExpect(status().isBadRequest())
