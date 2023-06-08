@@ -1,5 +1,6 @@
 package ylab.bies.userservice.repository;
 
+import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<UserProjection> findProjectedById(UUID uuid);
 
     Page<UserProjection> findAllProjectedBy(Pageable pageable);
+
+    Optional<User> findByEmail(@NonNull String email);
 }

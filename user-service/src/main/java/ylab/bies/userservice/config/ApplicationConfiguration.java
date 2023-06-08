@@ -16,6 +16,8 @@ import java.util.Set;
 @Setter
 public class ApplicationConfiguration implements WebMvcConfigurer {
     private Set<String> userDefaultRoles;
+    private String adminUsername;
+    private String adminPassword;
 
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
