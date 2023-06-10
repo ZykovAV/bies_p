@@ -135,6 +135,8 @@ public class IdeaController {
                     @ApiResponse(responseCode = "400", description = "Invalid request data",
                             content = @Content),
                     @ApiResponse(responseCode = "404", description = "Idea not found",
+                            content = @Content),
+                    @ApiResponse(responseCode = "403", description = "Access to someone else's idea is prohibited",
                             content = @Content)
             })
     @PreAuthorize("isAuthenticated()")
