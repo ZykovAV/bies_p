@@ -179,11 +179,11 @@ public class IdeaServiceImpl implements IdeaService {
 
     private void ideaStatusAndUserIdVerification(UUID userId, Idea ideaFromDB) {
         if (!userId.equals(ideaFromDB.getUserId())) {
-            throw new InvalidStatusIdeaException("You cannot change someone else's idea");
+            throw new AccessDeniedException("You cannot change someone else's idea");
         }
         if (Objects.equals(ideaFromDB.getStatus(), ACCEPTED.getValue()) ||
                 Objects.equals(ideaFromDB.getStatus(), REJECTED.getValue())) {
-            throw new InvalidStatusIdeaException("Idea with the status 'Accepted' or 'Rejected' cannot be edited");
+            throw new AccessDeniedException("Idea with the status 'Accepted' or 'Rejected' cannot be edited");
         }
     }
 

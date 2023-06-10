@@ -37,7 +37,8 @@ public class IdeaController {
     @Operation(summary = "Create a new draft idea", responses = {
             @ApiResponse(responseCode = "201", description = "Draft idea created",
                     content = @Content(schema = @Schema(implementation = IdeaDraftResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data")
+            @ApiResponse(responseCode = "400", description = "Invalid request data",
+                    content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @PostMapping(value = "/draft")
@@ -51,7 +52,8 @@ public class IdeaController {
     @Operation(summary = "Get idea by ID", responses = {
             @ApiResponse(responseCode = "200", description = "Found idea",
                     content = @Content(schema = @Schema(implementation = IdeaResponseDto.class))),
-            @ApiResponse(responseCode = "404", description = "Idea not found")
+            @ApiResponse(responseCode = "404", description = "Idea not found",
+                    content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @GetMapping(value = "/{id}")
@@ -61,9 +63,9 @@ public class IdeaController {
 
 
     @Operation(summary = "Change idea status", responses = {
-            @ApiResponse(responseCode = "200", description = "Status changed"),
-            @ApiResponse(responseCode = "304", description = "Status not changed"),
-            @ApiResponse(responseCode = "404", description = "Idea not found")
+            @ApiResponse(responseCode = "200", description = "Status changed", content = @Content),
+            @ApiResponse(responseCode = "304", description = "Status not changed", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("hasRole('EXPERT')")
     @PatchMapping("/{id}/status")
@@ -74,9 +76,9 @@ public class IdeaController {
 
 
     @Operation(summary = "Like an idea", responses = {
-            @ApiResponse(responseCode = "200", description = "Idea liked"),
-            @ApiResponse(responseCode = "304", description = "Like has been rejected"),
-            @ApiResponse(responseCode = "404", description = "Idea not found")
+            @ApiResponse(responseCode = "200", description = "Idea liked", content = @Content),
+            @ApiResponse(responseCode = "304", description = "Like has been rejected", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/like")
@@ -87,9 +89,9 @@ public class IdeaController {
 
 
     @Operation(summary = "Dislike an idea", responses = {
-            @ApiResponse(responseCode = "200", description = "Idea disliked"),
-            @ApiResponse(responseCode = "304", description = "Dislike has been rejected"),
-            @ApiResponse(responseCode = "404", description = "Idea not found")
+            @ApiResponse(responseCode = "200", description = "Idea disliked", content = @Content),
+            @ApiResponse(responseCode = "304", description = "Dislike has been rejected", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/dislike")
@@ -102,7 +104,7 @@ public class IdeaController {
     @Operation(summary = "Checking if current user is an author of idea", responses = {
             @ApiResponse(responseCode = "200", description = "'true' if current user is an author, 'false' - if not",
                     content = @Content(schema = @Schema(implementation = Boolean.class))),
-            @ApiResponse(responseCode = "404", description = "Idea not found")
+            @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/is-author")
@@ -113,7 +115,9 @@ public class IdeaController {
 
     @Operation(summary = "Get all ideas", responses = {
             @ApiResponse(responseCode = "200", description = "Success",
-                    content = @Content(schema = @Schema(implementation = Page.class)))
+                    content = @Content),
+            @ApiResponse(responseCode = "400", description = "Invalid pageable",
+                    content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -124,12 +128,15 @@ public class IdeaController {
     }
 
 
-    @Operation(summary = "Update an idea", responses = {
-            @ApiResponse(responseCode = "200", description = "Idea updated",
-                    content = @Content(schema = @Schema(implementation = IdeaResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "404", description = "Idea not found")
-    })
+    @Operation(summary = "Update an idea",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Idea updated",
+                            content = @Content(schema = @Schema(implementation = IdeaResponseDto.class))),
+                    @ApiResponse(responseCode = "400", description = "Invalid request data",
+                            content = @Content),
+                    @ApiResponse(responseCode = "404", description = "Idea not found",
+                            content = @Content)
+            })
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     public ResponseEntity<IdeaResponseDto> updateIdea(@Valid @RequestBody IdeaRequestDto editRequest, @PathVariable Long id) {
@@ -139,10 +146,11 @@ public class IdeaController {
     }
 
 
-
     @Operation(summary = "Get all user's ideas", responses = {
             @ApiResponse(responseCode = "200", description = "Success",
-                    content = @Content(schema = @Schema(implementation = Page.class)))
+                    content = @Content),
+            @ApiResponse(responseCode = "400", description = "Invalid pageable",
+                    content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @GetMapping(value = "/my")
