@@ -121,10 +121,11 @@ public class IdeaServiceImpl implements IdeaService {
 
     @Transactional(readOnly = true)
     public Page<IdeaResponseDto> getAllIdeas(Pageable pageable) {
+        UUID currentUserId = tokenManager.getUserIdFromToken();
         Page<Idea> ideas = ideaRepository.findAllByStatusNotOrderByRatingDesc(DRAFT.getValue(), pageable);
         log.info("List all ideas: {}", ideas);
         Page<IdeaResponseDto> listDto = ideas.map(ideaMapper::ideaEntityToIdeaResponseDto);
-        listDto.forEach(responseDto -> responseDto.setUserLike(voteService.getVoteOfUser(responseDto.getUserId(), responseDto.getId())));
+        listDto.forEach(responseDto -> responseDto.setUserLike(voteService.getVoteOfUser(currentUserId, responseDto.getId())));
         return listDto;
     }
 
