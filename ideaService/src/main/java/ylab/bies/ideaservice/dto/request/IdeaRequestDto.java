@@ -8,8 +8,6 @@ import javax.validation.constraints.NotBlank;
 @Getter
 public class IdeaRequestDto {
 
-    private Long id;
-
     @NotBlank
     private String name;
 

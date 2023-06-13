@@ -23,7 +23,6 @@ import ylab.bies.ideaservice.service.IdeaService;
 import ylab.bies.ideaservice.service.KafkaProducerService;
 import ylab.bies.ideaservice.service.VoteService;
 import ylab.bies.ideaservice.util.AccessTokenManager;
-import ylab.bies.ideaservice.util.enums.Status;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -55,7 +54,7 @@ public class IdeaServiceImpl implements IdeaService {
             throw new IdeaNotFoundException("There's no idea with id=" + id);
         }
         // если идея - черновик и запрашивает не его автор
-        if (idea.getStatus() == DRAFT.getValue() && !userId.equals(idea.getUserId())) {
+        if (Objects.equals(idea.getStatus(), DRAFT.getValue()) && !userId.equals(idea.getUserId())) {
             log.info("Access denied to idea with id={}", id);
             throw new AccessDeniedException("Access denied to idea with id=" + id);
         }
@@ -70,13 +69,13 @@ public class IdeaServiceImpl implements IdeaService {
     @Transactional
     public void changeStatus(Long id, Integer status) {
         if (status == null ||
-                (status != ACCEPTED.getValue() && status != Status.REJECTED.getValue())) {
+                (!status.equals(ACCEPTED.getValue()) && !status.equals(REJECTED.getValue()))) {
             log.info("Status for idea id={} can be changed only to ACCEPTED(3) or REJECTED(4)", id);
             throw new StatusNotChangedException("Status can be changed only to ACCEPTED(3) or REJECTED(4)");
         }
         Integer currentStatus = ideaRepository.getStatus(id).orElse(null);
         // отклонять и одобрять можно только идеи на рассмотрении
-        if (currentStatus == null || currentStatus != UNDER_CONSIDERATION.getValue()) {
+        if (currentStatus == null || !currentStatus.equals(UNDER_CONSIDERATION.getValue())) {
             log.info("Change status for idea id={} is not allowed. Current status is: {}", id, currentStatus);
             throw new StatusNotChangedException("Change status for idea id=" + id + " is not allowed");
         }
@@ -100,10 +99,25 @@ public class IdeaServiceImpl implements IdeaService {
             log.info("Attempt to rate own idea with id={} was rejected", id);
             throw new VoteRejectedException("It is not allowed to rate your own idea");
         }
+        Integer currentStatus = ideaRepository.getStatus(id).orElse(null);
+        // оценивать можно только идеи на рассмотрении
+        if (currentStatus == null || !currentStatus.equals(UNDER_CONSIDERATION.getValue())) {
+            log.info("Rate an idea with id={} is not allowed. Current status is: {}", id, currentStatus);
+            throw new VoteRejectedException("Rate an idea with id=" + id + " is not allowed");
+        }
         voteService.rate(userId, id, isLike);
         updateRating(id);  // пересчёт рейтинга
     }
 
+    @Override
+    public boolean isCurrentUserAuthor(Long id) {
+        UUID authorId = ideaRepository.getAuthorId(id).orElse(null);
+        if (id == null || authorId == null) {
+            log.info("There's no idea with id={}", id);
+            throw new IdeaNotFoundException("There's no idea with id=" + id);
+        }
+        return authorId.equals(tokenManager.getUserIdFromToken());
+    }
 
     @Transactional(readOnly = true)
     public Page<IdeaResponseDto> getAllIdeas(Pageable pageable) {

@@ -3,7 +3,6 @@ package ylab.bies.ideaservice.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import ylab.bies.ideaservice.dto.request.IdeaDraftRequestDto;
 import ylab.bies.ideaservice.dto.request.IdeaRequestDto;
 import ylab.bies.ideaservice.dto.response.IdeaDraftResponseDto;
@@ -19,6 +18,8 @@ public interface IdeaService {
     void changeStatus(Long id, Integer status);
 
     void rate(Long id, boolean isLike);
+
+    boolean isCurrentUserAuthor(Long id);
 
     Page<IdeaResponseDto> getAllIdeas(Pageable pageable);
 

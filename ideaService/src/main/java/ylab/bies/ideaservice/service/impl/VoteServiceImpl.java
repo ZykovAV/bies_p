@@ -3,6 +3,7 @@ package ylab.bies.ideaservice.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ylab.bies.ideaservice.exception.VoteRejectedException;
 import ylab.bies.ideaservice.repository.VoteRepository;
 import ylab.bies.ideaservice.service.VoteService;
 import ylab.bies.ideaservice.entity.Vote;
@@ -33,6 +34,9 @@ public class VoteServiceImpl implements VoteService {
             voteRepository.save(new Vote(userId, ideaId, isLike));
         } else if (vote != isLike) {
             voteRepository.changeVote(userId, ideaId, isLike);
+        } else {
+            log.info("Second rate an idea with id={} is not allowed.", ideaId);
+            throw new VoteRejectedException("Cannot rate for the second time");
         }
     }
 }
