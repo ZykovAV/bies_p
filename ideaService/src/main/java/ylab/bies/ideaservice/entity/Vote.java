@@ -8,6 +8,9 @@ import lombok.Setter;
 
 import java.util.UUID;
 
+/**
+ * Primary key for Vote entity
+ */
 @Getter
 @Setter
 @Entity

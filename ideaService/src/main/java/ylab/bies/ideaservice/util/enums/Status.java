@@ -1,5 +1,8 @@
 package ylab.bies.ideaservice.util.enums;
 
+/**
+ * Idea's statuses
+ */
 public enum Status {
     DRAFT(1),
     UNDER_CONSIDERATION(2),

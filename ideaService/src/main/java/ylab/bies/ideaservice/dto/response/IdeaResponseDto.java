@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.util.UUID;
 
+/**
+ * DTO for all get methods
+ */
 @Setter
 @Getter
 @AllArgsConstructor

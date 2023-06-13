@@ -23,7 +23,9 @@ import ylab.bies.ideaservice.service.IdeaService;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
-
+/**
+ * Idea request processing controller
+ */
 @RestController
 @RequestMapping(value = "/api/v1/ideas")
 @SecurityRequirement(name = "Bearer Token")
@@ -34,6 +36,11 @@ public class IdeaController {
 
     private final IdeaService ideaService;
 
+    /**
+     * Create a draft
+     * @param request contains required parameters 'name' and 'text'
+     * @return created draft (idea with status DRAFT)
+     */
     @Operation(summary = "Create a new draft idea", responses = {
             @ApiResponse(responseCode = "201", description = "Draft idea created",
                     content = @Content(schema = @Schema(implementation = IdeaDraftResponseDto.class))),
@@ -48,12 +55,17 @@ public class IdeaController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-
+    /**
+     * Get idea by id. Returns only idea with statuses UNDER_CONSIDERATION, ACCEPTER, REJECTED and
+     * current user's DRAFT.
+     * @param id of idea
+     * @return an idea with required id
+     */
     @Operation(summary = "Get idea by ID", responses = {
             @ApiResponse(responseCode = "200", description = "Found idea",
                     content = @Content(schema = @Schema(implementation = IdeaResponseDto.class))),
-            @ApiResponse(responseCode = "404", description = "Idea not found",
-                    content = @Content)
+            @ApiResponse(responseCode = "403", description = "Access denied", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @GetMapping(value = "/{id}")
@@ -61,46 +73,61 @@ public class IdeaController {
         return new ResponseEntity<>(ideaService.findById(id), HttpStatus.OK);
     }
 
-
+    /**
+     * Change status of idea. Only available to experts.
+     * It is possible to change the status only for ideas with a status UNDER_CONSIDERATION
+     * @param id of idea
+     * @param statusId (3 - ACCEPTED or 4 - REJECTED)
+     */
     @Operation(summary = "Change idea status", responses = {
             @ApiResponse(responseCode = "200", description = "Status changed", content = @Content),
-            @ApiResponse(responseCode = "304", description = "Status not changed", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Status not changed", content = @Content),
             @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("hasRole('EXPERT')")
     @PatchMapping("/{id}/status")
-    public ResponseEntity<HttpStatus> changeStatus(@PathVariable Long id, @RequestParam Integer statusId) {
+    public ResponseEntity<Void> changeStatus(@PathVariable Long id, @RequestParam Integer statusId) {
         ideaService.changeStatus(id, statusId);
-        return ResponseEntity.ok(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
-
+    /**
+     * Like an idea. It is possible to like only other user's idea with status UNDER_CONSIDERATION
+     * @param id of idea
+     */
     @Operation(summary = "Like an idea", responses = {
             @ApiResponse(responseCode = "200", description = "Idea liked", content = @Content),
-            @ApiResponse(responseCode = "304", description = "Like has been rejected", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Like has been rejected", content = @Content),
             @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/like")
-    public ResponseEntity<HttpStatus> like(@PathVariable Long id) {
+    public ResponseEntity<Void> like(@PathVariable Long id) {
         ideaService.rate(id, true);
-        return ResponseEntity.ok(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
-
+    /**
+     * Dislike an idea. It is possible to dislike only other user's idea with status UNDER_CONSIDERATION
+     * @param id of idea
+     */
     @Operation(summary = "Dislike an idea", responses = {
             @ApiResponse(responseCode = "200", description = "Idea disliked", content = @Content),
-            @ApiResponse(responseCode = "304", description = "Dislike has been rejected", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Dislike has been rejected", content = @Content),
             @ApiResponse(responseCode = "404", description = "Idea not found", content = @Content)
     })
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/dislike")
-    public ResponseEntity<HttpStatus> dislike(@PathVariable Long id) {
+    public ResponseEntity<Void> dislike(@PathVariable Long id) {
         ideaService.rate(id, false);
-        return ResponseEntity.ok(HttpStatus.OK);
+        return ResponseEntity.ok().build();
     }
 
-
+    /**
+     * Check if current user is an author of idea
+     * @param id of idea
+     * @return 'true' if current user is an author of idea, or 'false' - if not
+     */
     @Operation(summary = "Checking if current user is an author of idea", responses = {
             @ApiResponse(responseCode = "200", description = "'true' if current user is an author, 'false' - if not",
                     content = @Content(schema = @Schema(implementation = Boolean.class))),
@@ -112,7 +139,11 @@ public class IdeaController {
         return ResponseEntity.ok(ideaService.isCurrentUserAuthor(id));
     }
 
-
+    /**
+     * Get a list of ideas. Returns only ideas with statuses UNDER_CONSIDERATION, ACCEPTER, REJECTED.
+     * @param pageable contains page number, how many results on page, sort options.
+     * @return page with ideas
+     */
     @Operation(summary = "Get all ideas", responses = {
             @ApiResponse(responseCode = "200", description = "Success",
                     content = @Content),
@@ -127,7 +158,13 @@ public class IdeaController {
         return new ResponseEntity<>(ideas, HttpStatus.OK);
     }
 
-
+    /**
+     * Edit and publish the idea. It is possible only edit user's own idea with DRAFT or UNDER_CONSIDERATION status.
+     * If a draft is being edited, it will be automatically published (status changed to UNDER_CONSIDERATION)
+     * @param editRequest contains required parameters 'name' and 'text'
+     * @param id of idea
+     * @return updated idea
+     */
     @Operation(summary = "Update an idea",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Idea updated",
@@ -138,7 +175,7 @@ public class IdeaController {
                             content = @Content),
                     @ApiResponse(responseCode = "403", description = "Access to someone else's idea is prohibited",
                             content = @Content)
-            })
+    })
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     public ResponseEntity<IdeaResponseDto> updateIdea(@Valid @RequestBody IdeaRequestDto editRequest, @PathVariable Long id) {
@@ -147,7 +184,11 @@ public class IdeaController {
         return new ResponseEntity<>(updatedIdea, HttpStatus.OK);
     }
 
-
+    /**
+     * Get a list of current user's ideas.
+     * @param pageable contains page number, how many results on page, sort options.
+     * @return page with current user's ideas
+     */
     @Operation(summary = "Get all user's ideas", responses = {
             @ApiResponse(responseCode = "200", description = "Success",
                     content = @Content),

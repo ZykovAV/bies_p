@@ -7,7 +7,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import ylab.bies.ideaservice.dto.notification.NotificationDto;
 
-
+/**
+ * Service for sending notifications to Kafka
+ */
 @Slf4j
 @Service
 public class KafkaProducerService {
@@ -21,6 +23,10 @@ public class KafkaProducerService {
         this.topicName = topicName;
     }
 
+    /**
+     * Send notification to Kafka
+     * @param notificationDto notification to send
+     */
     public void sendNotification(NotificationDto notificationDto) {
         try {
             kafkaTemplate.send(topicName, notificationDto);

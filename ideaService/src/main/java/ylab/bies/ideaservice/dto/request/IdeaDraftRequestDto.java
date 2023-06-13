@@ -6,6 +6,9 @@ import lombok.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
+/**
+ * DTO for draft
+ */
 @Setter
 @Getter
 public class IdeaDraftRequestDto {

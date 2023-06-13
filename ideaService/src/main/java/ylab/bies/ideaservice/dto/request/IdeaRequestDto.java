@@ -6,6 +6,9 @@ import lombok.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
+/**
+ * DTO for edit and publish an idea
+ */
 @Setter
 @Getter
 public class IdeaRequestDto {

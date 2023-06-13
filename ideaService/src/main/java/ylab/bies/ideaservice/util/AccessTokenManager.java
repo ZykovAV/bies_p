@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * Tool for get UUID from token
+ */
 @Component
 public class AccessTokenManager {
 
