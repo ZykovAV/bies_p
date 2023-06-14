@@ -360,7 +360,7 @@ public class IdeaControllerTest {
      */
 
     @Test
-    @DisplayName("ChangeStatus. Change DRAFT(1) to IMPOSSIBLE STATUS. Should return 304")
+    @DisplayName("ChangeStatus. Change DRAFT(1) to IMPOSSIBLE STATUS. Should return 403")
     public void changeDraftToImpossibleStatus() throws Exception {
         initTable();  // add test draft and then try to change status
         for (int i : new int[]{-1, 0, 5}) {
@@ -368,12 +368,12 @@ public class IdeaControllerTest {
                             .with(jwt()
                                     .authorities(AuthorityUtils.createAuthorityList("ROLE_EXPERT"))
                                     .jwt(jwt -> jwt.claim("sub", String.valueOf(EXPERT_ID)))))
-                    .andExpect(status().isNotModified());
+                    .andExpect(status().isForbidden());
         }
     }
 
     @Test
-    @DisplayName("ChangeStatus. Change DRAFT(1) to ANY STATUS. Should return 304")
+    @DisplayName("ChangeStatus. Change DRAFT(1) to ANY STATUS. Should return 403")
     public void changeDraftToAnyStatus() throws Exception {
         initTable();  // add test draft and then try to change status
         for (int i = 1; i <= 4; i++) {
@@ -381,12 +381,12 @@ public class IdeaControllerTest {
                             .with(jwt()
                                     .authorities(AuthorityUtils.createAuthorityList("ROLE_EXPERT"))
                                     .jwt(jwt -> jwt.claim("sub", String.valueOf(EXPERT_ID)))))
-                    .andExpect(status().isNotModified());
+                    .andExpect(status().isForbidden());
         }
     }
 
     @Test
-    @DisplayName("ChangeStatus. Change UNDER_CONSIDERATION(2) to DRAFT(1) or SAME. Should return 304")
+    @DisplayName("ChangeStatus. Change UNDER_CONSIDERATION(2) to DRAFT(1) or SAME. Should return 403")
     public void changeUnderConsiderationToAnyStatus() throws Exception {
         initTable();
         for (int i = 1; i <= 2; i++) {
@@ -394,7 +394,7 @@ public class IdeaControllerTest {
                             .with(jwt()
                                     .authorities(AuthorityUtils.createAuthorityList("ROLE_EXPERT"))
                                     .jwt(jwt -> jwt.claim("sub", String.valueOf(EXPERT_ID)))))
-                    .andExpect(status().isNotModified());
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -421,7 +421,7 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("ChangeStatus. Change ACCEPTED(3) to ANY STATUS. Should return 304")
+    @DisplayName("ChangeStatus. Change ACCEPTED(3) to ANY STATUS. Should return 403")
     public void changeAcceptedToAnyStatus() throws Exception {
         initTable();
         for (int i = 1; i <= 4; i++) {
@@ -429,13 +429,13 @@ public class IdeaControllerTest {
                             .with(jwt()
                                     .authorities(AuthorityUtils.createAuthorityList("ROLE_EXPERT"))
                                     .jwt(jwt -> jwt.claim("sub", String.valueOf(EXPERT_ID)))))
-                    .andExpect(status().isNotModified());
+                    .andExpect(status().isForbidden());
         }
     }
 
 
     @Test
-    @DisplayName("ChangeStatus. Change REJECTED(4) to ANY STATUS. Should return 304")
+    @DisplayName("ChangeStatus. Change REJECTED(4) to ANY STATUS. Should return 403")
     public void changeRejectedToAnyStatus() throws Exception {
         initTable();
         for (int i = 1; i <= 4; i++) {
@@ -443,7 +443,7 @@ public class IdeaControllerTest {
                             .with(jwt()
                                     .authorities(AuthorityUtils.createAuthorityList("ROLE_EXPERT"))
                                     .jwt(jwt -> jwt.claim("sub", String.valueOf(EXPERT_ID)))))
-                    .andExpect(status().isNotModified());
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -464,43 +464,43 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Like. Like a DRAFT. Should return 304")
+    @DisplayName("Like. Like a DRAFT. Should return 403")
     public void likeDraft() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/like")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Like. Like an ACCEPTED idea. Should return 304")
+    @DisplayName("Like. Like an ACCEPTED idea. Should return 403")
     public void likeAccepted() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/3/like")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Like. Like a REJECTED idea. Should return 304")
+    @DisplayName("Like. Like a REJECTED idea. Should return 403")
     public void likeRejected() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/4/like")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Like. Like own UNDER_CONSIDERATION idea. Should return 304")
+    @DisplayName("Like. Like own UNDER_CONSIDERATION idea. Should return 403")
     public void likeOwnUnderConsideration() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/2/like")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -519,7 +519,7 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Like. Second like to same idea. Should be 304")
+    @DisplayName("Like. Second like to same idea. Should be 403")
     public void secondLikeToSameIdea() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/2/like")
@@ -534,7 +534,7 @@ public class IdeaControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/2/like")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/ideas/2")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
@@ -583,43 +583,43 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Dislike. Dislike a DRAFT. Should return 304")
+    @DisplayName("Dislike. Dislike a DRAFT. Should return 403")
     public void dislikeDraft() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/1/dislike")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Dislike. Dislike an ACCEPTED idea. Should return 304")
+    @DisplayName("Dislike. Dislike an ACCEPTED idea. Should return 403")
     public void dislikeAccepted() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/3/dislike")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Dislike. Dislike a REJECTED idea. Should return 304")
+    @DisplayName("Dislike. Dislike a REJECTED idea. Should return 403")
     public void dislikeRejected() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/4/dislike")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Dislike. Dislike own UNDER_CONSIDERATION idea. Should return 304")
+    @DisplayName("Dislike. Dislike own UNDER_CONSIDERATION idea. Should return 403")
     public void dislikeOwnUnderConsideration() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/2/dislike")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -638,7 +638,7 @@ public class IdeaControllerTest {
     }
 
     @Test
-    @DisplayName("Dislike. Second dislike to same idea. Should be 304")
+    @DisplayName("Dislike. Second dislike to same idea. Should be 403")
     public void secondDislikeToSameIdea() throws Exception {
         initTable();
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/2/dislike")
@@ -653,7 +653,7 @@ public class IdeaControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/ideas/2/dislike")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/ideas/2")
                         .with(jwt()
                                 .jwt(jwt -> jwt.claim("sub", String.valueOf(USER_2_ID)))))
